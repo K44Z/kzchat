@@ -6,7 +6,8 @@ import (
 
 func SetupRoutes(app *fiber.App) {
 	AuthRouter(app.Group("/auth"))	
-	// app.Get("/swagger/*", swagger.HandlerDefault)
 	MessagesRouter(app.Group("/messages"))
+	SocketRouter(app.Group("/ws"))
+	// app.Get("/swagger/*", swagger.HandlerDefault)
 	// app.Use("/profile", ProfileRouter)
 }

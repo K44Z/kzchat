@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"kzchat/server/models"
+	"kzchat/server/schemas"
 	"os"
 	"path/filepath"
 	"time"
@@ -19,7 +19,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func SaveConfig(config models.Config) error {
+func SaveConfig(config schemas.Config) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -39,19 +39,19 @@ func SaveConfig(config models.Config) error {
 	return ioutil.WriteFile(tokenFile, data, 0600)
 }
 
-func ReadConfig() (models.Config, error) {
+func ReadConfig() (schemas.Config, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return models.Config{}, err
+		return schemas.Config{}, err
 	}
 
 	data, err := ioutil.ReadFile(filepath.Join(home, ".kzchat", "token.json"))
 	if err != nil {
-		return models.Config{}, err
+		return schemas.Config{}, err
 	}
-	var config models.Config
+	var config schemas.Config
 	if err := json.Unmarshal(data, &config); err != nil {
-		return models.Config{}, err
+		return schemas.Config{}, err
 	}
 	return config, nil
 }

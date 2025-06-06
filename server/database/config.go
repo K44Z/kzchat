@@ -1,46 +1,23 @@
 package database
 
 import (
-	"kzchat/server/models"
+	"context"
 	"log"
 	"os"
+	repository "kzchat/server/database/generated"
 
-	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var DB *gorm.DB
-var err error
+var Queries *repository.Queries
 
-func ConnectDb() (*gorm.DB, error) {
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-		return nil, err
-	}
+func ConnectDb() error {
 	DB_URL := os.Getenv("DB_URL")
-	DB, err = gorm.Open(postgres.Open(DB_URL), &gorm.Config{})
+	dbConn, err := pgxpool.New(context.Background(), DB_URL)
 	if err != nil {
-		log.Fatal("Error connecting to the database ", err)
-		return nil, err
-	}
-	err = Migrate()
-	if err != nil {
-		log.Fatal("Error applying migrations")
-		return nil, err
-	}
-	log.Println("Database Connected ✅")
-	return DB, nil
-}
-
-func Migrate() error {
-	err = DB.AutoMigrate(
-		&models.User{},
-	)
-	if err != nil {
+		log.Fatal("failed to connect to db :", err)
 		return err
 	}
+	Queries = repository.New(dbConn)
 	return nil
 }

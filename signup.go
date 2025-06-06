@@ -21,7 +21,6 @@ var (
 	errorColor      = lipgloss.Color("#FF5252")
 	mutedColor      = lipgloss.Color("#4c4f69")
 
-
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
 			Foreground(textColor).
@@ -101,28 +100,16 @@ func (m SignupModel) Update(msg tea.Msg) (SignupModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "`": 
-			return m, func () tea.Msg {
+		case ":":
+			return m, func() tea.Msg {
 				return screenMsg(loginScreen)
 			}
 		case "tab":
 			m.focusIndex = (m.focusIndex + 1) % 3
-			for i := range m.inputs {
-				if i == m.focusIndex {
-					m.inputs[i].Focus()
-				} else {
-					m.inputs[i].Blur()
-				}
-			}
+			m.handleFocus()
 		case "shift+tab":
 			m.focusIndex = (m.focusIndex - 1) % 3
-			for i := range m.inputs {
-				if i == m.focusIndex {
-					m.inputs[i].Focus()
-				} else {
-					m.inputs[i].Blur()
-				}
-			}
+			m.handleFocus()
 		case "enter":
 			username := m.inputs[0].Value()
 			password := m.inputs[1].Value()
@@ -149,6 +136,11 @@ func (m SignupModel) Update(msg tea.Msg) (SignupModel, tea.Cmd) {
 					if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 						m.err = err.Error()
 					} else {
+						for i := range m.inputs {
+							m.inputs[i].Reset()
+							m.focusIndex = 0
+							m.handleFocus()
+						}
 						m.err = response["message"]
 					}
 				}
@@ -192,10 +184,19 @@ func (m SignupModel) View() string {
 	}
 	b.WriteString(button + "\n\n")
 
-
 	if m.err != "" {
 		b.WriteString("\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("Error: "+m.err))
 	}
 
 	return b.String()
+}
+
+func (m SignupModel) handleFocus() {
+	for i := range m.inputs {
+		if i == m.focusIndex {
+			m.inputs[i].Focus()
+		} else {
+			m.inputs[i].Blur()
+		}
+	}
 }

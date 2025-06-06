@@ -2,16 +2,18 @@ package main
 
 import (
 	"fmt"
-	"kzchat/server/models"
+	repository "kzchat/server/database/generated"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gorilla/websocket"
 )
 
 type ChatModel struct {
-	messages    []models.Message
+	messages    []repository.Message
 	message     string
 	commandMode bool
 	command     string
@@ -20,7 +22,11 @@ type ChatModel struct {
 	err         string
 	channels    []string
 	width       int
+	ws          *websocket.Conn
 	height      int
+	viewport    viewport.Model
+	content     string
+	ready       bool
 }
 
 func NewChatModel(username string) ChatModel {
@@ -30,14 +36,28 @@ func NewChatModel(username string) ChatModel {
 	input.CharLimit = 500
 	input.Width = 65
 	return ChatModel{
-		messages: []models.Message{},
+		messages: []repository.Message{},
 		username: username,
 		input:    input,
 		channels: []string{"general", "random", "dev", "help"},
 	}
 }
 
-var chatWidth int
+func (m ChatModel) headerView() string {
+	title := titleStyle.Render("Mr. Pager")
+	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(title)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
+}
+
+func (m ChatModel) footerView() string {
+	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+}
+
+func (m ChatModel) Init() tea.Cmd {
+	return receive(m.ws)
+}
 
 func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 	var cmd tea.Cmd
@@ -46,6 +66,7 @@ func (m ChatModel) Update(msg tea.Msg) (ChatModel, tea.Cmd) {
 		switch msg.String() {
 		case "enter":
 			m.message = m.input.Value()
+			// m.sendMessage()
 			m.input.Reset()
 		}
 	}
@@ -59,7 +80,7 @@ func (m ChatModel) View() string {
 
 	leftWidth := int(float64(m.width) * 0.14)
 	rightWidth := int(float64(m.width) * 0.14)
-	chatWidth = m.width - leftWidth - rightWidth - 7
+	chatWidth := m.width - leftWidth - rightWidth - 7
 	contentHeight := m.height - 7
 
 	leftStyle := lipgloss.NewStyle().

@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"fmt"
-	"kzchat/auth"
+	authentication "kzchat/auth"
 	"kzchat/helpers"
-	"kzchat/server/models"
+	repository "kzchat/server/database/generated"
 	"kzchat/server/schemas"
 	"kzchat/server/services"
+
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
@@ -14,13 +16,13 @@ import (
 
 func Register(c *fiber.Ctx) error {
 	body := c.Locals("validatedBody").(schemas.Auth)
-	exists,err := services.CheckExistingUser(body.Username)
+	exists, err := services.CheckExistingUser(body.Username)
 	if err != nil || exists {
 		helpers.Logger.Println(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "User already exists",
 		})
-	}	
+	}
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
 	if err != nil {
 		helpers.Logger.Println(err)
@@ -28,7 +30,7 @@ func Register(c *fiber.Ctx) error {
 			"message": "Failed to hash password",
 		})
 	}
-	user := &models.User{
+	user := repository.CreateUserParams{
 		Username: body.Username,
 		Password: string(hashedPass),
 	}
@@ -62,6 +64,12 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 	token, err := authentication.GenerateJWTtoken(user)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Internal server error",
+		})
+	}
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Login Sucessfull",
 		"token":   token,

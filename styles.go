@@ -24,6 +24,14 @@ var (
 			BorderForeground(lipgloss.Color("205"))
 )
 
+var (
+	infoStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Left = "┤"
+		return titleStyle.BorderStyle(b)
+	}()
+)
+
 var layoutStyle = lipgloss.NewStyle().
 	Padding(1, 2).
 	Margin(0)
@@ -135,8 +143,8 @@ func (m ChatModel) renderMessages() string {
 			Foreground(lipgloss.Color("15"))
 
 		for _, msg := range m.messages {
-			timestamp := timestampStyle.Render(fmt.Sprintf("[%s]", msg.Time.Format("15:04")))
-			username := usernameStyle.Render(msg.SenderId)
+			timestamp := timestampStyle.Render(fmt.Sprintf("[%s]", msg.Time.Time.Format("15:04")))
+			username := usernameStyle.Render(string(msg.SenderID))
 			message := messageStyle.Render(msg.Content)
 
 			content.WriteString(fmt.Sprintf("%s %s: %s\n", timestamp, username, message))

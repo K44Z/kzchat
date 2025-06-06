@@ -1,39 +1,42 @@
 package services
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"kzchat/server/database"
-	"kzchat/server/models"
-
-	"gorm.io/gorm"
+	repository "kzchat/server/database/generated"
+	"log"
 )
 
-func CreateUser(user *models.User) error {
-	err := database.DB.Create(user).Error
+func CreateUser(user repository.CreateUserParams) error {
+	ctx := context.Background()
+	str, err := database.Queries.CreateUser(ctx, user)
 	if err != nil {
 		return err
 	}
+	log.Println(str)
 	return nil
 }
 
-func GetUserByUsername(username string) (models.User, error) {
-	var user models.User
-	err := database.DB.Where("username = ?", username).First(&user).Error
+func GetUserByUsername(username string) (repository.User, error) {
+	ctx := context.Background()
+	user, err := database.Queries.GetUserByUsername(ctx, username)
 	if err != nil {
-		return user, nil
+		return repository.User{}, err
 	}
-	return user, err
+	return user, nil
+
 }
 
 func CheckExistingUser(username string) (bool, error) {
-	var user models.User
-	result := database.DB.Where("username = ?", username).First(&user)
+	ctx := context.Background()
+	_, err := database.Queries.GetUserByUsername(ctx, username)
 
-	if result.Error == nil {
-		return true, nil
-	}
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
 		return false, nil
 	}
-	return false, result.Error
+	return true, nil
 }

@@ -1,0 +1,17 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "queries"
+    schema: "schema.sql"
+    gen:
+      go:
+        package: "repository"
+        out: "generated"
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "text"
+            nullable: true
+            go_type: "string"
+          - db_type: "text"
+            nullable: false
+            go_type: "string"

@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
 )
 
@@ -19,7 +20,7 @@ func main() {
 	}
 
 	PORT := os.Getenv("PORT")
-	_, err = database.ConnectDb()
+	err = database.ConnectDb()
 	if err != nil {
 		log.Fatal("Error connecting to the database", err)
 	}
@@ -31,9 +32,14 @@ func main() {
 		},
 	))
 	app.Use(logger.New())
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
 	routes.SetupRoutes(app)
-
-	err =app.Listen(PORT)
+	err = app.Listen(PORT)
 	if err != nil {
 		log.Fatal(err)
 	}

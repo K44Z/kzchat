@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	authentication "kzchat/auth"
-	"kzchat/server/models"
 	"kzchat/server/schemas"
 	"net/http"
 
@@ -41,28 +40,16 @@ func (m LoginModel) Update(msg tea.Msg) (LoginModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "`":
+		case ":":
 			return m, func() tea.Msg {
 				return screenMsg(signupScreen)
 			}
 		case "tab":
 			m.focusIndex = (m.focusIndex + 1) % 3
-			for i := range m.inputs {
-				if i == m.focusIndex {
-					m.inputs[i].Focus()
-				} else {
-					m.inputs[i].Blur()
-				}
-			}
+			m.handleFocus()
 		case "shift+tab":
 			m.focusIndex = (m.focusIndex - 1) % 3
-			for i := range m.inputs {
-				if i == m.focusIndex {
-					m.inputs[i].Focus()
-				} else {
-					m.inputs[i].Blur()
-				}
-			}
+			m.handleFocus()
 		case "enter":
 			username := m.inputs[0].Value()
 			password := m.inputs[1].Value()
@@ -85,7 +72,7 @@ func (m LoginModel) Update(msg tea.Msg) (LoginModel, tea.Cmd) {
 					if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 						m.err = err.Error()
 					} else {
-						config := models.Config{Token: response["token"], Username: username}
+						config := schemas.Config{Token: response["token"], Username: username}
 						authentication.SaveConfig(config)
 					}
 					return m, func() tea.Msg {
@@ -95,6 +82,8 @@ func (m LoginModel) Update(msg tea.Msg) (LoginModel, tea.Cmd) {
 					if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 						m.err = err.Error()
 					} else {
+						m.focusIndex = 0
+						m.handleFocus()
 						m.err = response["message"]
 					}
 				}
@@ -143,4 +132,14 @@ func (m LoginModel) View() string {
 	}
 
 	return b.String()
+}
+
+func (m LoginModel) handleFocus() {
+	for i := range m.inputs {
+		if i == m.focusIndex {
+			m.inputs[i].Focus()
+		} else {
+			m.inputs[i].Blur()
+		}
+	}
 }

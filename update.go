@@ -22,7 +22,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.chat.width = msg.Width 
-		m.chat.height = msg.Height	
+		m.chat.height = msg.Height
 		return m, nil
 	case tea.KeyMsg:
 		if key.Matches(msg, quitKeys) {
@@ -37,13 +37,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case m.commandMode && msg.String() == "enter":
 			cmd := m.command.Value()
-			m.handleCommand(cmd) 
+			m.handleCommand(cmd)
 			m.command.Reset()
 			m.command.Blur()
 			m.commandMode = false
 			m.chat.commandMode = false
 
-		case (m.commandMode && msg.String() == "esc") || (m.commandMode && m.command.Value() == "") :
+		case (m.commandMode && msg.String() == "esc") || (m.commandMode && m.command.Value() == ""):
 			m.command.Reset()
 			m.command.Blur()
 			m.commandMode = false
@@ -57,32 +57,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.login, cmd = m.login.Update(msg)
 			return m, cmd
 		case chatScreen:
-			m.chat.width = m.width 
+			m.chat.width = m.width
 			m.chat.height = m.height
 			m.chat, cmd = m.chat.Update(msg)
 		}
 	case screenMsg:
 		m.currentScreen = screen(msg)
-		// if m.currentScreen == chatScreen{
-		// 	return m, fetchMessages(m.config, "")
-		// }
+		if m.currentScreen == chatScreen {
+			m.chat = NewChatModel(m.config.Username)
+			m.chat.width = m.width
+			m.chat.height = m.height
+			// 	return m, fetchMessages(m.config, "")
+		}
 		return m, nil
 		// case dmMsg:
 	default:
 		m.spinner, cmd = m.spinner.Update(msg)
 	}
 	if m.commandMode {
-		 var cmd tea.Cmd 
-		 m.command, cmd = m.command.Update(msg)
-		 cmds = append(cmds, cmd)
+		var cmd tea.Cmd
+		m.command, cmd = m.command.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	return m, tea.Batch(cmds...)
 }
 
 func (m model) handleCommand(cmd string) {
-	if m.currentScreen == chatScreen { 
+	if m.currentScreen == chatScreen {
 		m.chat.command = cmd
 	}
 }
-

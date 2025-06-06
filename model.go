@@ -3,7 +3,7 @@ package main
 import (
 	authentication "kzchat/auth"
 	"kzchat/helpers"
-	"kzchat/server/models"
+	"kzchat/server/schemas"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -25,7 +25,7 @@ func NewModel() model {
 	command.CharLimit = 256
 	command.Prompt = ""
 	m.command = command
-	if config.Token == "" || err != nil { // zid istokenvalid
+	if config.Token == "" || err != nil || !authentication.IsTokenValid(config.Token){ // zid istokenvalid
 		helpers.Logger.Println(err)
 		m.config = config
 		m.currentScreen = signupScreen
@@ -49,7 +49,7 @@ type model struct {
 	signup        SignupModel
 	login         LoginModel
 	chat          ChatModel
-	config        models.Config
+	config        schemas.Config
 	command       textinput.Model
 	commandMode   bool
 }
