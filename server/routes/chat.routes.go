@@ -7,5 +7,5 @@ import (
 )
 
 func MessagesRouter(router fiber.Router) {
-	router.Get("/message/recipientId/:id", controllers.GetMessages)
+	router.Get("/recipientUsername/:recUsername", controllers.GetDmByrecipientUsername)
 }

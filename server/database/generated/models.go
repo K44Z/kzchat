@@ -10,7 +10,9 @@ import (
 
 type Chat struct {
 	ID        int32
+	Type      interface{}
 	CreatedAt pgtype.Timestamp
+	Name      pgtype.Text
 }
 
 type ChatMember struct {
@@ -18,18 +20,13 @@ type ChatMember struct {
 	UserID int32
 }
 
-type ChatMessage struct {
-	ChatID    int32
-	MessageID int32
-}
-
 type Message struct {
-	ID         int32
-	SenderID   int32
-	ReceiverID int32
-	Content    string
-	Time       pgtype.Timestamp
-	Type       string
+	ID       int32
+	SenderID int32
+	Content  string
+	ChatID   int32
+	Time     pgtype.Timestamp
+	Type     string
 }
 
 type User struct {

@@ -1,12 +1,15 @@
 package controllers
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	authentication "kzchat/auth"
 	"kzchat/helpers"
+	"kzchat/server/database"
 	repository "kzchat/server/database/generated"
 	"kzchat/server/schemas"
-	"kzchat/server/services"
 
 	"log"
 
@@ -16,11 +19,15 @@ import (
 
 func Register(c *fiber.Ctx) error {
 	body := c.Locals("validatedBody").(schemas.Auth)
-	exists, err := services.CheckExistingUser(body.Username)
-	if err != nil || exists {
-		helpers.Logger.Println(err)
+	ctx := context.Background()
+	_, err := database.Queries.GetUserByUsername(ctx, body.Username)
+	if errors.Is(err, sql.ErrNoRows) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "User already exists",
+		})
+	} else if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
 		})
 	}
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
@@ -34,13 +41,13 @@ func Register(c *fiber.Ctx) error {
 		Username: body.Username,
 		Password: string(hashedPass),
 	}
-	err = services.CreateUser(user)
+	str, err := database.Queries.CreateUser(ctx, user)
 	if err != nil {
-		helpers.Logger.Println(err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Error while creating user",
+			"message": "Internal server error",
 		})
 	}
+	log.Println(str)
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "User created",
 	})
@@ -48,11 +55,15 @@ func Register(c *fiber.Ctx) error {
 
 func Login(c *fiber.Ctx) error {
 	body := c.Locals("validatedBody").(schemas.Auth)
-	user, err := services.GetUserByUsername(body.Username)
-	if err != nil {
-		helpers.Logger.Println(err)
+	ctx := context.Background()
+	user, err := database.Queries.GetUserByUsername(ctx, body.Username)
+	if errors.Is(err, sql.ErrNoRows) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "User does not exist" + err.Error(),
+			"message": "User already exists",
+		})
+	} else if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
 		})
 	}
 	fmt.Println(user.Password)
