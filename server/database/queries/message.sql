@@ -24,4 +24,12 @@ INSERT INTO messages(sender_id, content, chat_id, time, type)
 VALUES($1, $2, $3, $4, $5)
 RETURNING *;
 
+-- name: CreateChat :one 
+INSERT INTO chats("type", name)
+VALUES($1, $2)
+RETURNING *;
 
+-- name: CreateChatMembers :one
+INSERT INTO chat_members(chat_id, user_id)
+VALUES($1, $2)
+RETURNING *; 
