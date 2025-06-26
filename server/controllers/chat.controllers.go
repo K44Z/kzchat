@@ -7,6 +7,7 @@ import (
 	"kzchat/server/database"
 	repository "kzchat/server/database/generated"
 	"kzchat/server/schemas"
+	"kzchat/server/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
@@ -45,82 +46,48 @@ func GetDmByrecipientUsername(c *fiber.Ctx) error {
 	})
 }
 
-func CreateDmMessage(c *fiber.Ctx) error {
+func CreateDmMessage(m schemas.Message) error {
 	ctx := context.Background()
-	recUsername := c.Params("username")
-	body := c.Locals("validatedBody").(schemas.CreateMessageSchema)
-	user := c.Locals("user").(repository.User)
-	if body.ChatId == 0 {
-		rec, err := database.Queries.GetUserByUsername(ctx, recUsername)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-					"message": "Recipient not found",
-				})
-			} else {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"message": "Internal server error",
-				})
-			}
-		}
-		name := fmt.Sprintf("%s - %s ", user.Username, recUsername)
-		fmt.Println(name)
-		chatParams := repository.CreateChatParams{
-			Type: body.Type,
-			Name: name,
-		}
-		chat, err := database.Queries.CreateChat(ctx, chatParams)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message": "Internal server error",
-			})
-		}
-		_, err = database.Queries.CreateChatMembers(ctx, repository.CreateChatMembersParams{
-			ChatID: chat.ID,
-			UserID: user.ID,
-		})
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message": "Internal server error",
-			})
-		}
-		_, err = database.Queries.CreateChatMembers(ctx, repository.CreateChatMembersParams{
-			ChatID: body.ChatId,
-			UserID: rec.ID,
-		})
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message": "Internal server error",
-			})
+	var chat *repository.Chat
+	rec, err := database.Queries.GetUserByUsername(ctx, m.ReceiverUsername)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("user does not exist")
+		} else {
+			return fmt.Errorf("internal server error : %s", err)
 		}
 	}
+	user, err := database.Queries.GetUserByUsername(ctx, m.SenderUsername)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("user does not exist")
+		} else {
+			return fmt.Errorf("internal server error : %s", err)
+		}
+	}
+
+	if m.Chat.ID == 0 {
+		users := []repository.User{
+			user, rec,
+		}
+		fmt.Println("the users are",users)
+		chat, err = services.CreateDMChatFromMessage(m, users)
+		if err != nil {
+			return err
+		}
+	}
+
 	timestamp := pgtype.Timestamp{
-		Time:  body.Time,
+		Time:  m.Time,
 		Valid: true,
 	}
-
 	params := repository.StoreChatMessageParams{
-		SenderID: body.SenderId,
-		Content:  body.Content,
-		ChatID:   body.ChatId,
+		SenderID: user.ID,
+		Content:  m.Content,
+		ChatID:   chat.ID,
 		Time:     timestamp,
-		Type:     body.Type,
+		Type:     "dm",
 	}
 	database.Queries.StoreChatMessage(ctx, params)
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message": "Message sent successfully",
-	})
+	return nil
 }
-
-// func CreateChanMessage(c *fiber.Ctx) error {
-// 	ctx := context.Background()
-// 	chanName := c.Params("name")
-// 	body := c.Locals("validatedBody").(schemas.CreateMessageSchema)	
-// 	return c.SendStatus(fiber.StatusCreated)
-// }
- 
-
-// func CreateChat() error {
-	
-// }

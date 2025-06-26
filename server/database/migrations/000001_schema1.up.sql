@@ -1,10 +1,3 @@
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'chat_type') THEN
-        CREATE TYPE chat_type AS ENUM ('dm', 'chan');
-    END IF;
-END$$;
-
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -15,7 +8,7 @@ CREATE TABLE users (
 
 CREATE TABLE chats (
     id SERIAL PRIMARY KEY,
-    type chat_type NOT NULL,
+    type TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

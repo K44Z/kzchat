@@ -8,6 +8,5 @@ import (
 
 func MessagesRouter(router fiber.Router) {
 	router.Get("/recipient/:username", controllers.GetDmByrecipientUsername)
-	router.Post("/recipient/:username", controllers.CreateDmMessage)
 	// router.Post("/channel/:name", controllers.CreateChanMessage)
 }

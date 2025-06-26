@@ -5,11 +5,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 )
-
+var Program *tea.Program
 func main() {
 	m := NewModel()
-	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
-	if err := p.Start(); err != nil {
+	Program= tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
+	if err := Program.Start(); err != nil {
 		log.Fatal(err)
 	}
 }

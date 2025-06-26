@@ -18,7 +18,7 @@ RETURNING id, type, created_at, name
 `
 
 type CreateChatParams struct {
-	Type interface{}
+	Type string
 	Name string
 }
 

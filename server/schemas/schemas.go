@@ -15,6 +15,19 @@ func (a Auth) Read(p []byte) (n int, err error) {
 	panic("unimplemented")
 }
 
+type Message struct {
+	Content          string    `json:"content"`
+	Time             time.Time `json:"time"`
+	SenderUsername   string    `json:"senderUsername"`
+	ReceiverUsername string    `json:"receiverUsername"`
+	Chat             Chat      `json:"chat"`
+}
+
+type Chat struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
+}
+
 type CreateMessageSchema struct {
 	Content  string    `json:"content" validate:"required"`
 	Type     string    `json:"type" validate:"required,oneof=dm chan"`

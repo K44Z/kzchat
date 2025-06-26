@@ -10,7 +10,7 @@ import (
 
 type Chat struct {
 	ID        int32
-	Type      interface{}
+	Type      string
 	CreatedAt pgtype.Timestamp
 	Name      string
 }

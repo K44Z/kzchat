@@ -21,6 +21,7 @@ func ValidateBody[T any]() fiber.Handler {
 		if err := helpers.ValidateStruct(&body); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": err.Error(),
+				"message": "Invalid credentials please ensure password is 6 char long",
 			})
 		}
 		log.Println("BODY VALIDATED")

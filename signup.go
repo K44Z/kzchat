@@ -14,28 +14,10 @@ import (
 )
 
 var (
-	primaryColor    = lipgloss.Color("#1e1e2e")
-	secondaryColor  = lipgloss.Color("#00FFFF")
-	backgroundColor = lipgloss.Color("#282C34")
-	textColor       = lipgloss.Color("#FAFAFA")
-	errorColor      = lipgloss.Color("#FF5252")
-	mutedColor      = lipgloss.Color("#4c4f69")
-
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(textColor).
-			Background(primaryColor).
-			Padding(1, 4).
-			MarginBottom(1).
-			BorderStyle(lipgloss.RoundedBorder()).
-			Align(lipgloss.Center)
-
-	labelStyle = lipgloss.NewStyle().
-			Foreground(secondaryColor).
-			Bold(true).
-			PaddingRight(1)
-
-	inputBoxStyle = lipgloss.NewStyle().
+	primaryColor   = lipgloss.Color("#1e1e2e")
+	secondaryColor = lipgloss.Color("#00FFFF")
+	mutedColor     = lipgloss.Color("#4c4f69")
+	inputBoxStyle  = lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(primaryColor).
 			Padding(0, 1)
@@ -45,17 +27,6 @@ var (
 
 	blurredStyle = inputBoxStyle.Copy().
 			Foreground(mutedColor)
-
-	cursorStyle = lipgloss.NewStyle().Foreground(secondaryColor)
-
-	helpStyle = lipgloss.NewStyle().
-			Foreground(mutedColor).
-			MarginTop(1)
-
-	errorStyle = lipgloss.NewStyle().
-			Foreground(errorColor).
-			Bold(true)
-
 	buttonStyle = lipgloss.NewStyle().
 			Padding(0, 3).
 			MarginTop(1).
@@ -77,7 +48,6 @@ type SignupModel struct {
 	focusIndex int
 	inputs     []textinput.Model
 	err        string
-	message    string
 }
 
 func NewSignupModel() SignupModel {

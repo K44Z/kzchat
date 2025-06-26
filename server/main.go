@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error connecting to the database", err)
 	}
-	log.Println("Migrations applied ✅")
+	log.Println("Migrations applied")
 	app := fiber.New()
 	app.Use(cors.New(
 		cors.Config{
@@ -37,6 +37,9 @@ func main() {
 			return c.Next()
 		}
 		return fiber.ErrUpgradeRequired
+	})
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("hello")
 	})
 	routes.SetupRoutes(app)
 	err = app.Listen(PORT)

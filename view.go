@@ -31,11 +31,13 @@ func (m model) View() string {
 	right := statusRight.Render(" KZchat ")
 
 	var change string
-	if m.currentScreen == loginScreen {
+
+	switch m.currentScreen {
+	case loginScreen:
 		change = " • [`] signup"
-	} else if m.currentScreen == signupScreen {
+	case signupScreen:
 		change = " • [`] login"
-	} else {
+	default:
 		change = ""
 	}
 	mid := statusMid.Render(" [tab] switch focus" + change + " • [ctrl+c] quit")
