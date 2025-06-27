@@ -48,32 +48,30 @@ func GetDmByrecipientUsername(c *fiber.Ctx) error {
 
 func CreateDmMessage(m schemas.Message) error {
 	ctx := context.Background()
-	var chat *repository.Chat
-	rec, err := database.Queries.GetUserByUsername(ctx, m.ReceiverUsername)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("user does not exist")
-		} else {
-			return fmt.Errorf("internal server error : %s", err)
+	var (
+		chat      *repository.Chat
+		err       error
+		usernames = []string{
+			m.SenderUsername, m.ReceiverUsername,
 		}
-	}
-	user, err := database.Queries.GetUserByUsername(ctx, m.SenderUsername)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("user does not exist")
-		} else {
-			return fmt.Errorf("internal server error : %s", err)
-		}
-	}
+		users []repository.User
+	)
 
-	if m.Chat.ID == 0 {
-		users := []repository.User{
-			user, rec,
+	for _, u := range usernames {
+		user, err := database.Queries.GetUserByUsername(ctx, u)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return fmt.Errorf("user does not exist")
+			} else {
+				return fmt.Errorf("internal server error : %s", err)
+			}
 		}
-		fmt.Println("the users are",users)
+		users = append(users, user)
+	}
+	if m.Chat.ID == 0 {
 		chat, err = services.CreateDMChatFromMessage(m, users)
 		if err != nil {
-			return err
+			return fmt.Errorf("error creating chat :%s", err)
 		}
 	}
 
@@ -82,12 +80,15 @@ func CreateDmMessage(m schemas.Message) error {
 		Valid: true,
 	}
 	params := repository.StoreChatMessageParams{
-		SenderID: user.ID,
+		SenderID: users[0].ID,
 		Content:  m.Content,
 		ChatID:   chat.ID,
 		Time:     timestamp,
 		Type:     "dm",
 	}
-	database.Queries.StoreChatMessage(ctx, params)
+	_, err = database.Queries.StoreChatMessage(ctx, params)
+	if err != nil {
+		return fmt.Errorf("error storing message :%s", err)
+	}
 	return nil
 }

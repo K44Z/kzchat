@@ -1,4 +1,4 @@
-package main
+package  screens
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ type LoginModel struct {
 	err        string
 }
 
-func NewLoginModel() LoginModel {
+func NewLoginModel() *LoginModel {
 	username := textinput.New()
 	username.CharLimit = 256
 	username.Focus()
@@ -30,19 +30,19 @@ func NewLoginModel() LoginModel {
 	password.EchoMode = textinput.EchoPassword
 	password.EchoCharacter = '•'
 
-	return LoginModel{
+	return &LoginModel{
 		inputs:     []textinput.Model{username, password},
 		focusIndex: 0,
 	}
 }
 
-func (m LoginModel) Update(msg tea.Msg) (LoginModel, tea.Cmd) {
+func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case ":":
 			return m, func() tea.Msg {
-				return screenMsg(signupScreen)
+				return ScreenMsg(SignupScreen)
 			}
 		case "tab":
 			m.focusIndex = (m.focusIndex + 1) % 3
@@ -76,7 +76,7 @@ func (m LoginModel) Update(msg tea.Msg) (LoginModel, tea.Cmd) {
 						authentication.SaveConfig(config)
 					}
 					return m, func() tea.Msg {
-						return screenMsg(chatScreen)
+						return ScreenMsg(ChatScreen)
 					}
 				} else {
 					if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -99,7 +99,7 @@ func (m LoginModel) Update(msg tea.Msg) (LoginModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m LoginModel) View() string {
+func (m *LoginModel) View() string {
 
 	var b strings.Builder
 
@@ -134,7 +134,7 @@ func (m LoginModel) View() string {
 	return b.String()
 }
 
-func (m LoginModel) handleFocus() {
+func (m *LoginModel) handleFocus() {
 	for i := range m.inputs {
 		if i == m.focusIndex {
 			m.inputs[i].Focus()

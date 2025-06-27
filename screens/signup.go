@@ -1,4 +1,4 @@
-package main
+package screens
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	// "net/http"
 )
+
 
 var (
 	primaryColor   = lipgloss.Color("#1e1e2e")
@@ -50,7 +51,7 @@ type SignupModel struct {
 	err        string
 }
 
-func NewSignupModel() SignupModel {
+func NewSignupModel() *SignupModel {
 	username := textinput.New()
 	username.CharLimit = 256
 	username.Focus()
@@ -60,19 +61,19 @@ func NewSignupModel() SignupModel {
 	password.EchoMode = textinput.EchoPassword
 	password.EchoCharacter = '•'
 
-	return SignupModel{
+	return &SignupModel{
 		inputs:     []textinput.Model{username, password},
 		focusIndex: 0,
 	}
 }
 
-func (m SignupModel) Update(msg tea.Msg) (SignupModel, tea.Cmd) {
+func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case ":":
 			return m, func() tea.Msg {
-				return screenMsg(loginScreen)
+				return ScreenMsg(LoginScreen)
 			}
 		case "tab":
 			m.focusIndex = (m.focusIndex + 1) % 3
@@ -99,7 +100,7 @@ func (m SignupModel) Update(msg tea.Msg) (SignupModel, tea.Cmd) {
 				defer resp.Body.Close()
 				if resp.StatusCode == 201 {
 					return m, func() tea.Msg {
-						return screenMsg(loginScreen)
+						return ScreenMsg(LoginScreen)
 					}
 				} else {
 					var response map[string]string
@@ -127,7 +128,7 @@ func (m SignupModel) Update(msg tea.Msg) (SignupModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m SignupModel) View() string {
+func (m *SignupModel) View() string {
 	var b strings.Builder
 
 	b.WriteString("\n\n\n\n\n\n\n\n\n\n\n\n\n")
@@ -161,7 +162,7 @@ func (m SignupModel) View() string {
 	return b.String()
 }
 
-func (m SignupModel) handleFocus() {
+func (m *SignupModel) handleFocus() {
 	for i := range m.inputs {
 		if i == m.focusIndex {
 			m.inputs[i].Focus()

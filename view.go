@@ -1,6 +1,7 @@
 package main
 
 import (
+	"kzchat/screens"
 	"math"
 	"strings"
 
@@ -11,13 +12,13 @@ func (m model) View() string {
 	var content string
 	var screenName string
 	switch m.currentScreen {
-	case loginScreen:
+	case screens.LoginScreen:
 		content = m.login.View()
 		screenName = "Login Screen"
-	case signupScreen:
+	case screens.SignupScreen:
 		content = m.signup.View()
 		screenName = "Signup Screen"
-	case chatScreen:
+	case screens.ChatScreen:
 		content = m.chat.View()
 		screenName = "Chat Screen"
 	default:
@@ -33,9 +34,9 @@ func (m model) View() string {
 	var change string
 
 	switch m.currentScreen {
-	case loginScreen:
+	case screens.LoginScreen:
 		change = " • [`] signup"
-	case signupScreen:
+	case screens.SignupScreen:
 		change = " • [`] login"
 	default:
 		change = ""

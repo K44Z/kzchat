@@ -19,6 +19,8 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+var Config schemas.Config
+
 func SaveConfig(config schemas.Config) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -39,21 +41,20 @@ func SaveConfig(config schemas.Config) error {
 	return ioutil.WriteFile(tokenFile, data, 0600)
 }
 
-func ReadConfig() (schemas.Config, error) {
+func ReadConfig() (error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return schemas.Config{}, err
+		return  err
 	}
 
 	data, err := ioutil.ReadFile(filepath.Join(home, ".kzchat", "token.json"))
 	if err != nil {
-		return schemas.Config{}, err
+		return err
 	}
-	var config schemas.Config
-	if err := json.Unmarshal(data, &config); err != nil {
-		return schemas.Config{}, err
+	if err := json.Unmarshal(data, &Config); err != nil {
+		return  err
 	}
-	return config, nil
+	return nil
 }
 
 func IsTokenValid(tokenString string) bool {

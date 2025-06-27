@@ -21,14 +21,6 @@ var (
 			BorderForeground(lipgloss.Color("205"))
 )
 
-// var (
-// 	infoStyle = func() lipgloss.Style {
-// 		b := lipgloss.RoundedBorder()
-// 		b.Left = "┤"
-// 		return titleStyle.BorderStyle(b)
-// 	}()
-// )
-
 var layoutStyle = lipgloss.NewStyle().
 	Padding(1, 2).
 	Margin(0)
