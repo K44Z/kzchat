@@ -61,7 +61,6 @@ func SeedMessages() error {
 		}
 	
 		for _ ,m := range messages {
-
 			timestamp := pgtype.Timestamp{
 				Time:  m.Time,
 				Valid: true,

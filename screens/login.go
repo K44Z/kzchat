@@ -39,6 +39,7 @@ func NewLoginModel() *LoginModel {
 func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		m.err = ""
 		switch msg.String() {
 		case ":":
 			return m, func() tea.Msg {

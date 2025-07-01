@@ -37,7 +37,15 @@ RETURNING *;
 -- name: FindChatByParticipants :one
 SELECT chat_id
 FROM chat_members
-WHERE user_id = ANY($1::text[])
+WHERE user_id = ANY($1::int[])
 GROUP BY chat_id
-HAVING COUNT(DISTINCT user_id) = $2
-   AND COUNT(*) = $2;
+HAVING COUNT(*) = $2
+   AND COUNT(*) = (
+       SELECT COUNT(*) FROM chat_members cm2
+       WHERE cm2.chat_id = chat_members.chat_id
+   );
+
+
+-- name: GetChatById :one 
+SELECT * FROM chats
+WHERE id = $1;

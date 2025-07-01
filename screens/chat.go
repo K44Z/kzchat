@@ -3,7 +3,6 @@ package screens
 import (
 	"fmt"
 	"kzchat/api"
-	repository "kzchat/server/database/generated"
 	"kzchat/server/schemas"
 	"strings"
 
@@ -70,7 +69,7 @@ import (
 type ChatModel struct {
 	Chat        schemas.Chat
 	Messages    []schemas.Message
-	Message     repository.Message
+	Message     schemas.Message
 	CommandMode bool
 	Command     string
 	Input       textinput.Model
@@ -110,7 +109,7 @@ func NewChatModel(width int, height int) *ChatModel {
 		Height:   height,
 		Viewport: vp,
 	}
-	str := m.renderMessages()
+	str := m.RenderMessages()
 	m.Viewport.SetContent(str)
 	return m
 }
@@ -123,10 +122,13 @@ func (m *ChatModel) Update(msg tea.Msg) (*ChatModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		m.Err = ""
 		switch msg.String() {
 		case "enter":
-			if m.CommandMode {
-				return m, m.HandleChatCommand()
+			if m.CommandMode && msg.String() == "enter" {
+				cmd := m.HandleChatCommand()
+				m.CommandMode = false
+				return m, cmd
 			} else {
 				m.SendMessage()
 				return m, nil
@@ -136,13 +138,6 @@ func (m *ChatModel) Update(msg tea.Msg) (*ChatModel, tea.Cmd) {
 		case "down", "j":
 			m.Viewport.ScrollDown(1)
 		}
-	case ChatFetchedMsg:
-		m.Messages = msg.Messages
-		m.Viewport.SetContent(m.renderMessages())
-		m.Viewport.GotoBottom()
-		return m, nil
-	case ErrMsg:
-		m.Err = msg.Error()
 	}
 	if !m.CommandMode {
 		m.Input, cmd = m.Input.Update(msg)
@@ -153,8 +148,8 @@ func (m *ChatModel) Update(msg tea.Msg) (*ChatModel, tea.Cmd) {
 
 func (m *ChatModel) HandleChatCommand() tea.Cmd {
 	var (
-		cmd tea.Cmd
-		// output string
+		cmd    tea.Cmd
+		output string
 	)
 	parts := strings.Fields(m.Command)
 	if len(parts) == 0 {
@@ -164,7 +159,12 @@ func (m *ChatModel) HandleChatCommand() tea.Cmd {
 	name := parts[0][1:]
 	args := parts[1:]
 	if handler, ok := CommandRegistry[name]; ok {
-		_, cmd = handler(CommandContext{Model: m}, args)
+		output, cmd = handler(CommandContext{Model: m}, args)
+		if output != "" {
+			return func() tea.Msg {
+				return ErrMsg(fmt.Errorf("%s", output))
+			}
+		}
 	} else {
 		m.Err = "Unknown command: " + name
 	}
@@ -261,7 +261,7 @@ func (m ChatModel) renderLeftSidebar() string {
 	return content.String()
 }
 
-func (m ChatModel) renderMessages() string {
+func (m ChatModel) RenderMessages() string {
 	var content strings.Builder
 
 	if len(m.Messages) == 0 {

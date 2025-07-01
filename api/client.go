@@ -99,7 +99,7 @@ func GetChat(m []string) (int32, []schemas.User, error) {
 		return 0, nil, fmt.Errorf("error marshaling data: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:4000/messages/chatId", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", "http://localhost:4000/messages/chat", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return 0, nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -112,7 +112,10 @@ func GetChat(m []string) (int32, []schemas.User, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		if resp.StatusCode == http.StatusBadRequest {
+			return 0, nil, fmt.Errorf(`no previous chat was found, use dm <username> <"message">`)
+		}
+		return 0, nil, fmt.Errorf("unexpected status code %d ", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)

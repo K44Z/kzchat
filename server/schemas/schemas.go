@@ -42,6 +42,6 @@ type GetChatIdByParticipants struct {
 }
 
 type User struct {
-	ID        int32
-	Username  string
+	ID       int32
+	Username string
 }

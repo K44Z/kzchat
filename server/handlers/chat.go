@@ -8,6 +8,7 @@ import (
 	repository "kzchat/server/database/generated"
 	"kzchat/server/schemas"
 	"kzchat/server/services"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
@@ -32,21 +33,27 @@ func GetDmsByrecipientUsername(c *fiber.Ctx) error {
 			"message": "Internal server error",
 		})
 	}
-	fmt.Println("current :", current)
+	users := []repository.User{
+		current, rec,
+	}
 	params := repository.GetDmChatMessagesByParticipantsParams{
 		UserID:   current.ID,
 		UserID_2: rec.ID,
 	}
-	messages, err := database.Queries.GetDmChatMessagesByParticipants(ctx, params)
+	m, err := database.Queries.GetDmChatMessagesByParticipants(ctx, params)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Internal server error",
 		})
 	}
-	fmt.Println("messages: ", messages)
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"messages": messages,
-	})
+	messages, err := services.MapMessagesToClient(m, users)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Internal server error",
+		})
+	}
+	return c.Status(fiber.StatusOK).JSON(messages)
 }
 
 func CreateDmMessage(m schemas.Message) error {
@@ -71,6 +78,7 @@ func CreateDmMessage(m schemas.Message) error {
 		}
 		users = append(users, user)
 	}
+	fmt.Println("the chat id is :", m.Chat.ID)
 	if m.Chat.ID == 0 {
 		chat, err = services.CreateDMChatFromMessage(m, users)
 		if err != nil {
@@ -99,7 +107,6 @@ func CreateDmMessage(m schemas.Message) error {
 func GetChatByParticipants(c *fiber.Ctx) error {
 	ctx := context.Background()
 	var users []schemas.User
-	fmt.Println(c.Locals("validatedBody"))
 	body, ok := c.Locals("validatedBody").(schemas.GetChatIdByParticipants)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -109,6 +116,7 @@ func GetChatByParticipants(c *fiber.Ctx) error {
 	for _, u := range body.Members {
 		user, err := database.Queries.GetUserByUsername(ctx, u)
 		if err != nil {
+			log.Println(err)
 			if errors.Is(err, pgx.ErrNoRows) {
 				return fmt.Errorf("user does not exist")
 			} else {
@@ -121,20 +129,20 @@ func GetChatByParticipants(c *fiber.Ctx) error {
 		})
 	}
 	chatId, err := database.Queries.FindChatByParticipants(ctx, repository.FindChatByParticipantsParams{
-		Column1: []string{users[0].Username, string(users[1].Username)},
-		UserID:  2, // this is the expected count of users not userid
+		Column1: []int32{users[0].ID, users[1].ID},
+		Column2: 2,
 	})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message": "Chat not found",
-			})
-		}
+	if chatId == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Chat not found",
+		})
+	}
+	if err != nil{
 		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Internal server error",
 		})
 	}
-	fmt.Println("the response is :", chatId, users)
+	fmt.Println("the chat id is :", chatId)
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"chatId": chatId,
 		"users":  users,

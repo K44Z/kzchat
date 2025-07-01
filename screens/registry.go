@@ -23,7 +23,7 @@ var CommandRegistry = map[string]CommandFunc{
 	"clear": func(ctx CommandContext, args []string) (string, tea.Cmd) {
 		ctx.Model.Messages = nil
 		ctx.Model.Viewport.SetContent("")
-		return "Cleared messages", nil
+		return "", nil
 	},
 	"dm": func(ctx CommandContext, args []string) (string, tea.Cmd) {
 		if len(args) < 1 {
@@ -31,7 +31,7 @@ var CommandRegistry = map[string]CommandFunc{
 		}
 		ctx.Model.Recipient.Username = args[0]
 
-		return "DM mode enabled", nil
+		return "", nil
 	},
 	"open": func(ctx CommandContext, args []string) (string, tea.Cmd) {
 		if len(args) < 1 {
@@ -40,7 +40,7 @@ var CommandRegistry = map[string]CommandFunc{
 
 		id, users, err := api.GetChat([]string{api.Config.Username, args[0]})
 		if users == nil {
-			return "users list empty", nil
+			return err.Error(), nil
 		}
 		if err != nil {
 			return err.Error(), nil
@@ -54,6 +54,6 @@ var CommandRegistry = map[string]CommandFunc{
 		cmd := ctx.Model.FetchMessages()
 		ctx.Model.Current = users[0]
 		ctx.Model.Recipient = users[1]
-		return "opening chat", cmd
+		return "", cmd
 	},
 }

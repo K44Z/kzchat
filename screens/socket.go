@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"kzchat/api"
-	a "kzchat/api"
 	"kzchat/server/schemas"
 	"net/http"
 	"strings"
@@ -66,7 +65,7 @@ func (m *ChatModel) FetchMessages() tea.Cmd {
 		if err != nil {
 			return ErrMsg(err)
 		}
-		req.Header.Add("Authorization", "Bearer "+a.Config.Token)
+		req.Header.Add("Authorization", "Bearer "+api.Config.Token)
 		resp, err := client.Do(req)
 		if err != nil {
 			return ErrMsg(err)
@@ -115,7 +114,7 @@ func (m *ChatModel) SendMessage() {
 			m.Err = err.Error()
 		}
 		m.Messages = append(m.Messages, message)
-		m.Viewport.SetContent(m.renderMessages())
+		m.Viewport.SetContent(m.RenderMessages())
 		m.Viewport.GotoBottom()
 		m.Input.Reset()
 	}

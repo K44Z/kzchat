@@ -40,3 +40,12 @@ func CheckExistingUser(username string) (bool, error) {
 	}
 	return true, nil
 }
+
+func GetUsernameById(id int32) (string, error) {
+	ctx := context.Background()
+	username, err := database.Queries.GetUsernameById(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	return username, nil
+}

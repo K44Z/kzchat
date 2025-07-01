@@ -70,6 +70,7 @@ func NewSignupModel() *SignupModel {
 func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		m.err = ""
 		switch msg.String() {
 		case ":":
 			return m, func() tea.Msg {

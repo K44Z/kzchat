@@ -55,22 +55,42 @@ func (q *Queries) CreateChatMembers(ctx context.Context, arg CreateChatMembersPa
 const findChatByParticipants = `-- name: FindChatByParticipants :one
 SELECT chat_id
 FROM chat_members
-WHERE user_id = ANY($1::text[])
+WHERE user_id = ANY($1::int[])
 GROUP BY chat_id
-HAVING COUNT(DISTINCT user_id) = $2
-   AND COUNT(*) = $2
+HAVING COUNT(*) = $2
+   AND COUNT(*) = (
+       SELECT COUNT(*) FROM chat_members cm2
+       WHERE cm2.chat_id = chat_members.chat_id
+   )
 `
 
 type FindChatByParticipantsParams struct {
-	Column1 []string
-	UserID  int32
+	Column1 []int32
+	Column2 interface{}
 }
 
 func (q *Queries) FindChatByParticipants(ctx context.Context, arg FindChatByParticipantsParams) (int32, error) {
-	row := q.db.QueryRow(ctx, findChatByParticipants, arg.Column1, arg.UserID)
+	row := q.db.QueryRow(ctx, findChatByParticipants, arg.Column1, arg.Column2)
 	var chat_id int32
 	err := row.Scan(&chat_id)
 	return chat_id, err
+}
+
+const getChatById = `-- name: GetChatById :one
+SELECT id, type, created_at, name FROM chats
+WHERE id = $1
+`
+
+func (q *Queries) GetChatById(ctx context.Context, id int32) (Chat, error) {
+	row := q.db.QueryRow(ctx, getChatById, id)
+	var i Chat
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.CreatedAt,
+		&i.Name,
+	)
+	return i, err
 }
 
 const getChatMessagesByChatId = `-- name: GetChatMessagesByChatId :many

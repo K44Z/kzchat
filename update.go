@@ -48,7 +48,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.command.Reset()
 			m.command.Blur()
 			m.commandMode = false
-			m.chat.CommandMode = true
 
 		case m.commandMode && (msg.String() == "esc" || m.command.Value() == ""):
 			m.command.Reset()
@@ -75,7 +74,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.chat, cmd = m.chat.Update(msg)
 			cmds = append(cmds, cmd)
 		}
-
 	case screens.ScreenMsg:
 		m.currentScreen = screens.Screen(msg)
 		if m.currentScreen == screens.ChatScreen {
@@ -101,7 +99,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.chat.Ws = msg.Conn
 		go m.chat.ReadLoop(msg.Conn)
 		return m, nil
-
+	case screens.ChatFetchedMsg:
+		m.chat.Messages = msg.Messages
+		m.chat.Viewport.SetContent(m.chat.RenderMessages())
+		m.chat.Viewport.GotoBottom()
+		return m, nil
+	case screens.ErrMsg:
+		m.chat.Err = msg.Error()
 	default:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -111,6 +115,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.command, cmd = m.command.Update(msg)
 		cmds = append(cmds, cmd)
+	}else {
+		m.chat.Input.Focus()
 	}
 	return m, tea.Batch(cmds...)
 }
