@@ -1,6 +1,8 @@
 package schemas
 
-import "time"
+import (
+	"time"
+)
 
 type Auth struct {
 	Username string `json:"username" validate:"required"`
@@ -34,4 +36,12 @@ type CreateMessageSchema struct {
 	SenderId int32     `json:"sender_id" validate:"required"`
 	ChatId   int32     `json:"chat_id" validate:"required"`
 	Time     time.Time `json:"time"`
+}
+type GetChatIdByParticipants struct {
+	Members []string `json:"members" validate:"required"`
+}
+
+type User struct {
+	ID        int32
+	Username  string
 }

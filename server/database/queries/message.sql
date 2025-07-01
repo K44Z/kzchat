@@ -33,3 +33,11 @@ RETURNING *;
 INSERT INTO chat_members(chat_id, user_id)
 VALUES($1, $2)
 RETURNING *; 
+
+-- name: FindChatByParticipants :one
+SELECT chat_id
+FROM chat_members
+WHERE user_id = ANY($1::text[])
+GROUP BY chat_id
+HAVING COUNT(DISTINCT user_id) = $2
+   AND COUNT(*) = $2;

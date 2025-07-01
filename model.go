@@ -1,7 +1,7 @@
 package main
 
 import (
-	a "kzchat/auth"
+	a "kzchat/api"
 	"kzchat/helpers"
 	s "kzchat/screens"
 

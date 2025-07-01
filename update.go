@@ -2,7 +2,6 @@ package main
 
 import (
 	"kzchat/screens"
-	s "kzchat/screens"
 	"kzchat/server/schemas"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -49,7 +48,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.command.Reset()
 			m.command.Blur()
 			m.commandMode = false
-			m.chat.CommandMode = false
+			m.chat.CommandMode = true
 
 		case m.commandMode && (msg.String() == "esc" || m.command.Value() == ""):
 			m.command.Reset()
@@ -77,7 +76,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 
-	case s.ScreenMsg:
+	case screens.ScreenMsg:
 		m.currentScreen = screens.Screen(msg)
 		if m.currentScreen == screens.ChatScreen {
 			m.chat = screens.NewChatModel(m.width, m.height)
@@ -87,7 +86,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case s.WsMsg:
+	case screens.WsMsg:
 		scMesasge := schemas.Message{
 			Content:        msg.Content,
 			Time:           msg.Time,
@@ -98,7 +97,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.chat, cmd = m.chat.Update(msg)
 		return m, cmd
 
-	case s.WsConnectedMsg:
+	case screens.WsConnectedMsg:
 		m.chat.Ws = msg.Conn
 		go m.chat.ReadLoop(msg.Conn)
 		return m, nil
@@ -113,7 +112,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.command, cmd = m.command.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-
 	return m, tea.Batch(cmds...)
 }
 

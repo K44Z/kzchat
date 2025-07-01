@@ -1,0 +1,129 @@
+package api
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"kzchat/server/schemas"
+	"net/http"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
+)
+
+type Claims struct {
+	Username string `json:"username"`
+	Sub      string `json:"sub"`
+	jwt.RegisteredClaims
+}
+
+type GetChatResponse struct {
+	ChatId int32          `json:"chatId"`
+	Users  []schemas.User `json:"users"`
+}
+
+var Config schemas.Config
+
+func SaveConfig(config schemas.Config) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	configDir := filepath.Join(home, ".kzchat")
+
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		if err := os.Mkdir(configDir, 0700); err != nil {
+			return err
+		}
+	}
+	data, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	tokenFile := filepath.Join(configDir, "token.json")
+	return ioutil.WriteFile(tokenFile, data, 0600)
+}
+
+func ReadConfig() error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadFile(filepath.Join(home, ".kzchat", "token.json"))
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, &Config); err != nil {
+		return err
+	}
+	return nil
+}
+
+func IsTokenValid(tokenString string) bool {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+	secret := os.Getenv("JWT_SECRET")
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected singing method")
+		}
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return false
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		return false
+	}
+
+	return claims.ExpiresAt.After(time.Now())
+}
+
+func GetChat(m []string) (int32, []schemas.User, error) {
+	client := &http.Client{}
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"members": m,
+	})
+	if err != nil {
+		return 0, nil, fmt.Errorf("error marshaling data: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", "http://localhost:4000/messages/chatId", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return 0, nil, fmt.Errorf("error creating request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, nil, fmt.Errorf("error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, nil, fmt.Errorf("error reading response: %w", err)
+	}
+
+	var result GetChatResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		return 0, nil, fmt.Errorf("error unmarshaling response: %w", err)
+	}
+
+	return result.ChatId, result.Users, nil
+}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	authentication "kzchat/auth"
+	"kzchat/helpers"
 	"kzchat/server/database"
 	repository "kzchat/server/database/generated"
 	"kzchat/server/schemas"
@@ -78,7 +78,7 @@ func Login(c *fiber.Ctx) error {
 			"message": "Invalid credentials",
 		})
 	}
-	token, err := authentication.GenerateJWTtoken(user)
+	token, err := helpers.GenerateJWTtoken(user)
 	if err != nil {
 		log.Println(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

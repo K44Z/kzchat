@@ -52,6 +52,27 @@ func (q *Queries) CreateChatMembers(ctx context.Context, arg CreateChatMembersPa
 	return i, err
 }
 
+const findChatByParticipants = `-- name: FindChatByParticipants :one
+SELECT chat_id
+FROM chat_members
+WHERE user_id = ANY($1::text[])
+GROUP BY chat_id
+HAVING COUNT(DISTINCT user_id) = $2
+   AND COUNT(*) = $2
+`
+
+type FindChatByParticipantsParams struct {
+	Column1 []string
+	UserID  int32
+}
+
+func (q *Queries) FindChatByParticipants(ctx context.Context, arg FindChatByParticipantsParams) (int32, error) {
+	row := q.db.QueryRow(ctx, findChatByParticipants, arg.Column1, arg.UserID)
+	var chat_id int32
+	err := row.Scan(&chat_id)
+	return chat_id, err
+}
+
 const getChatMessagesByChatId = `-- name: GetChatMessagesByChatId :many
 SELECT messages.id, messages.sender_id, messages.content, messages.chat_id, messages.time, messages.type
 FROM messages

@@ -2,11 +2,10 @@ package screens
 
 import (
 	"fmt"
-	a "kzchat/auth"
+	"kzchat/api"
 	repository "kzchat/server/database/generated"
 	"kzchat/server/schemas"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -75,8 +74,8 @@ type ChatModel struct {
 	CommandMode bool
 	Command     string
 	Input       textinput.Model
-	Username    string
-	Recipient   string
+	Current     schemas.User
+	Recipient   schemas.User
 	Err         string
 	Channels    []string
 	Width       int
@@ -98,9 +97,13 @@ func NewChatModel(width int, height int) *ChatModel {
 	vp.MouseWheelEnabled = true
 	vp.MouseWheelDelta = 1
 
+	currentUser := schemas.User{
+		Username: api.Config.Username,
+	}
+
 	m := &ChatModel{
 		Messages: []schemas.Message{},
-		Username: a.Config.Username,
+		Current:  currentUser,
 		Input:    input,
 		Channels: []string{"general", "random", "dev", "help"},
 		Width:    width,
@@ -122,43 +125,50 @@ func (m *ChatModel) Update(msg tea.Msg) (*ChatModel, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			inputValue := strings.TrimSpace(m.Input.Value())
-			if inputValue != "" {
-				message := schemas.Message{
-					Content:          inputValue,
-					SenderUsername:   a.Config.Username,
-					Time:             time.Now(),
-					Chat:             m.Chat,
-					ReceiverUsername: "username",
-				}
-				if m.Ws == nil {
-					if m.Err != "" {
-						m.Err += "; ws is not connected"
-					} else {
-						m.Err = "ws is not connected"
-					}
-					return m, nil
-				}
-				err := m.Ws.WriteJSON(message)
-				if err != nil {
-					m.Err = err.Error()
-				}
-				m.Messages = append(m.Messages, message)
-				m.Viewport.SetContent(m.renderMessages())
-				m.Viewport.GotoBottom()
-				m.Input.Reset()
+			if m.CommandMode {
+				return m, m.HandleChatCommand()
+			} else {
+				m.SendMessage()
+				return m, nil
 			}
 		case "up", "k":
 			m.Viewport.ScrollUp(1)
 		case "down", "j":
 			m.Viewport.ScrollDown(1)
 		}
+	case ChatFetchedMsg:
+		m.Messages = msg.Messages
+		m.Viewport.SetContent(m.renderMessages())
+		m.Viewport.GotoBottom()
+		return m, nil
+	case ErrMsg:
+		m.Err = msg.Error()
 	}
 	if !m.CommandMode {
 		m.Input, cmd = m.Input.Update(msg)
 		m.Viewport, _ = m.Viewport.Update(msg)
 	}
 	return m, cmd
+}
+
+func (m *ChatModel) HandleChatCommand() tea.Cmd {
+	var (
+		cmd tea.Cmd
+		// output string
+	)
+	parts := strings.Fields(m.Command)
+	if len(parts) == 0 {
+		return nil
+	}
+
+	name := parts[0][1:]
+	args := parts[1:]
+	if handler, ok := CommandRegistry[name]; ok {
+		_, cmd = handler(CommandContext{Model: m}, args)
+	} else {
+		m.Err = "Unknown command: " + name
+	}
+	return cmd
 }
 
 func (m *ChatModel) View() string {
@@ -219,14 +229,6 @@ func (m *ChatModel) View() string {
 		content.WriteString("\n\n" + errorMsg)
 	}
 	return content.String()
-}
-
-func (m *ChatModel) handleChatCommand() {
-	args := strings.Fields(m.Command)
-	switch args[0] {
-	case "open":
-
-	}
 }
 
 func (m ChatModel) renderLeftSidebar() string {
@@ -322,7 +324,7 @@ func (m ChatModel) renderRightSidebar() string {
 		Bold(true).
 		Underline(true)
 	content.WriteString(headerStyle.Render("USER INFO") + "\n\n")
-	content.WriteString(fmt.Sprintf("Name: %s\n", m.Username))
+	content.WriteString(fmt.Sprintf("Name: %s\n", m.Current.Username))
 	content.WriteString("Status: Online\n\n\n")
 	content.WriteString(headerStyle.Render("SERVER") + "\n\n")
 	content.WriteString("Connected\n")

@@ -1,11 +1,11 @@
-package  screens
+package screens
 
 import (
 	"bytes"
 	"encoding/json"
 	"strings"
 
-	authentication "kzchat/auth"
+	"kzchat/api"
 	"kzchat/server/schemas"
 	"net/http"
 
@@ -73,7 +73,7 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 						m.err = err.Error()
 					} else {
 						config := schemas.Config{Token: response["token"], Username: username}
-						authentication.SaveConfig(config)
+						api.SaveConfig(config)
 					}
 					return m, func() tea.Msg {
 						return ScreenMsg(ChatScreen)

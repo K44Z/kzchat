@@ -25,6 +25,10 @@ func main() {
 		log.Fatal("Error connecting to the database", err)
 	}
 	log.Println("Migrations applied")
+	// err = scripts.SeedMessages()
+	// if err != nil {
+	// 	log.Fatal("Error seeding messages: ", err)
+	// }
 	app := fiber.New()
 	app.Use(cors.New(
 		cors.Config{
