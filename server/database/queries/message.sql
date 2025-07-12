@@ -45,7 +45,6 @@ HAVING COUNT(*) = $2
        WHERE cm2.chat_id = chat_members.chat_id
    );
 
-
 -- name: GetChatById :one 
 SELECT * FROM chats
 WHERE id = $1;

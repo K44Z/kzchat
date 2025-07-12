@@ -28,6 +28,17 @@ type GetChatResponse struct {
 	Users  []schemas.User `json:"users"`
 }
 
+type CreateChatResponse struct {
+	Chat schemas.Chat `json:"chat"`
+}
+type NotFoundErr struct {
+	Msg string
+}
+
+func (e *NotFoundErr) Error() string {
+	return fmt.Sprint(e.Msg)
+}
+
 var Config schemas.Config
 
 func SaveConfig(config schemas.Config) error {
@@ -37,8 +48,8 @@ func SaveConfig(config schemas.Config) error {
 	}
 	configDir := filepath.Join(home, ".kzchat")
 
-	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		if err := os.Mkdir(configDir, 0700); err != nil {
+	if _, err = os.Stat(configDir); os.IsNotExist(err) {
+		if err = os.Mkdir(configDir, 0700); err != nil {
 			return err
 		}
 	}
@@ -72,7 +83,7 @@ func IsTokenValid(tokenString string) bool {
 		panic(err)
 	}
 	secret := os.Getenv("JWT_SECRET")
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected singing method")
 		}
@@ -92,7 +103,7 @@ func IsTokenValid(tokenString string) bool {
 
 func GetChat(m []string) (int32, []schemas.User, error) {
 	client := &http.Client{}
-	jsonData, err := json.Marshal(map[string]interface{}{
+	jsonData, err := json.Marshal(map[string]any{
 		"members": m,
 	})
 	if err != nil {
@@ -112,8 +123,10 @@ func GetChat(m []string) (int32, []schemas.User, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusBadRequest {
-			return 0, nil, fmt.Errorf(`no previous chat was found, use dm <username> <"message">`)
+		if resp.StatusCode == http.StatusNotFound {
+			return 0, nil, &NotFoundErr{
+				Msg: `no previous chat was found, use dm <username> <"message">`,
+			}
 		}
 		return 0, nil, fmt.Errorf("unexpected status code %d ", resp.StatusCode)
 	}
@@ -129,4 +142,41 @@ func GetChat(m []string) (int32, []schemas.User, error) {
 	}
 
 	return result.ChatId, result.Users, nil
+}
+
+func CreateChat(message schemas.Message) (schemas.Chat, error) {
+	client := &http.Client{}
+	jsonData, err := json.Marshal(map[string]any{
+		"members": []string{message.SenderUsername, message.ReceiverUsername},
+		"message": message,
+	})
+	if err != nil {
+		return schemas.Chat{}, fmt.Errorf("error marshaling data: %w", err)
+	}
+	req, err := http.NewRequest("POST", "http://localhost:4000/messages/createChat", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return schemas.Chat{}, fmt.Errorf("error creating request : %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return schemas.Chat{}, fmt.Errorf("error sending request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		if resp.StatusCode == http.StatusBadRequest {
+			return schemas.Chat{}, fmt.Errorf(`no previous chat was found, use dm <username> <"message">`)
+		}
+		return schemas.Chat{}, fmt.Errorf("unexpected status code %d ", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return schemas.Chat{}, fmt.Errorf("error unmarshaling response: %w", err)
+	}
+	var result CreateChatResponse
+	if err := json.Unmarshal(body, &result); err != nil {
+		return schemas.Chat{}, fmt.Errorf("error unmarshaling response: %w", err)
+	}
+	return result.Chat, nil
 }

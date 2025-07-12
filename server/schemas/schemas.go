@@ -45,3 +45,8 @@ type User struct {
 	ID       int32
 	Username string
 }
+
+type CreateChatByMessage struct {
+	Members []string  `json:"members" validate:"required"`
+	Message Message	  `json:"message" validate:"required"`
+}

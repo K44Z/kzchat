@@ -107,12 +107,7 @@ func CreateDmMessage(m schemas.Message) error {
 func GetChatByParticipants(c *fiber.Ctx) error {
 	ctx := context.Background()
 	var users []schemas.User
-	body, ok := c.Locals("validatedBody").(schemas.GetChatIdByParticipants)
-	if !ok {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "failed to validated body",
-		})
-	}
+	body := c.Locals("validatedBody").(schemas.GetChatIdByParticipants)	
 	for _, u := range body.Members {
 		user, err := database.Queries.GetUserByUsername(ctx, u)
 		if err != nil {
@@ -133,12 +128,13 @@ func GetChatByParticipants(c *fiber.Ctx) error {
 		Column2: 2,
 	})
 	if chatId == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		log.Printf("Chat not found")
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": "Chat not found",
 		})
 	}
-	if err != nil{
-		c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Internal server error",
 		})
 	}
@@ -146,5 +142,33 @@ func GetChatByParticipants(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"chatId": chatId,
 		"users":  users,
+	})
+}
+
+func CreateChatFromMessage(c *fiber.Ctx) error {
+	ctx := context.Background()
+	var users []repository.User
+	body := c.Locals("validatedBody").(schemas.CreateChatByMessage)	
+	for _, u := range body.Members {
+		user, err := database.Queries.GetUserByUsername(ctx, u)
+		if err != nil {
+			log.Print(err)
+			if errors.Is(err, pgx.ErrNoRows) {
+				return fmt.Errorf("user does not exist")
+			} else {
+				return fmt.Errorf("internal server error : %s", err)
+			}
+		}
+		users = append(users, user)
+	}
+	chat, err := services.CreateDMChatFromMessage(body.Message, users)
+	if err != nil {
+		log.Print(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "internal server error",
+		})
+	}
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"chat": chat,
 	})
 }

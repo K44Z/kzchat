@@ -3,6 +3,7 @@ package main
 import (
 	"kzchat/screens"
 	"kzchat/server/schemas"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -43,8 +44,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.command.Focus()
 
 		case m.commandMode && msg.String() == "enter":
-			cmd := m.command.Value()
-			m.handleCommand(cmd)
+			command := strings.TrimSpace(m.command.Value())
+			if command != "" {
+				m.handleCommand(command)
+			}
 			m.command.Reset()
 			m.command.Blur()
 			m.commandMode = false
@@ -115,7 +118,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.command, cmd = m.command.Update(msg)
 		cmds = append(cmds, cmd)
-	}else {
+	} else {
 		m.chat.Input.Focus()
 	}
 	return m, tea.Batch(cmds...)

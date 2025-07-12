@@ -125,9 +125,8 @@ func (m *ChatModel) Update(msg tea.Msg) (*ChatModel, tea.Cmd) {
 		m.Err = ""
 		switch msg.String() {
 		case "enter":
-			if m.CommandMode && msg.String() == "enter" {
-				cmd := m.HandleChatCommand()
-				m.CommandMode = false
+			if m.CommandMode {
+				cmd = m.HandleChatCommand()
 				return m, cmd
 			} else {
 				m.SendMessage()
