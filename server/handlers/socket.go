@@ -29,14 +29,14 @@ func Broadcast(c *websocket.Conn) {
 		if err != nil {
 			fmt.Printf("error unmarshal json: %s", err)
 		}
-		err = helpers.ValidateStruct(m)// todo send errors
+		err = helpers.ValidateStruct(m) // todo send errors
 		if err != nil {
-			log.Error(err)
+			log.Error("Error vaidating strcut", err)
 			continue
-		} 
+		}
 		if err = CreateDmMessage(m); err != nil {
-			log.Error(err)
-			continue 
+			log.Error("error creating message", err)
+			continue
 		}
 		for client := range clients {
 			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {

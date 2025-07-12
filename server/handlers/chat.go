@@ -84,6 +84,8 @@ func CreateDmMessage(m schemas.Message) error {
 		if err != nil {
 			return fmt.Errorf("error creating chat :%s", err)
 		}
+	} else {
+		chat = &repository.Chat{ID: m.Chat.ID}
 	}
 
 	timestamp := pgtype.Timestamp{
@@ -107,7 +109,7 @@ func CreateDmMessage(m schemas.Message) error {
 func GetChatByParticipants(c *fiber.Ctx) error {
 	ctx := context.Background()
 	var users []schemas.User
-	body := c.Locals("validatedBody").(schemas.GetChatIdByParticipants)	
+	body := c.Locals("validatedBody").(schemas.GetChatIdByParticipants)
 	for _, u := range body.Members {
 		user, err := database.Queries.GetUserByUsername(ctx, u)
 		if err != nil {
@@ -148,7 +150,7 @@ func GetChatByParticipants(c *fiber.Ctx) error {
 func CreateChatFromMessage(c *fiber.Ctx) error {
 	ctx := context.Background()
 	var users []repository.User
-	body := c.Locals("validatedBody").(schemas.CreateChatByMessage)	
+	body := c.Locals("validatedBody").(schemas.CreateChatByMessage)
 	for _, u := range body.Members {
 		user, err := database.Queries.GetUserByUsername(ctx, u)
 		if err != nil {

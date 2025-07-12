@@ -322,6 +322,12 @@ func (m ChatModel) renderRightSidebar() string {
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
 		Underline(true)
+
+	titleStyle := lipgloss.NewStyle().Align(lipgloss.Center).
+		Foreground(lipgloss.Color("#8839ef"))
+
+	content.WriteString(titleStyle.Render(fmt.Sprintf("%v", m.Chat.Name)))
+	content.WriteString("\n\n")
 	content.WriteString(headerStyle.Render("USER INFO") + "\n\n")
 	content.WriteString(fmt.Sprintf("Name: %s\n", m.Current.Username))
 	content.WriteString("Status: Online\n\n\n")
