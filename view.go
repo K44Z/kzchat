@@ -10,25 +10,28 @@ import (
 
 func (m model) View() string {
 	var content string
-	var screenName string
+	var mode string
 	switch m.currentScreen {
 	case screens.LoginScreen:
 		content = m.login.View()
-		screenName = "Login Screen"
+		mode = "Login Screen"
 	case screens.SignupScreen:
 		content = m.signup.View()
-		screenName = "Signup Screen"
+		mode = "Signup Screen"
 	case screens.ChatScreen:
 		content = m.chat.View()
-		screenName = "Chat Screen"
+		mode = "Chat Screen"
 	default:
 		content = "Unknown screen"
-		screenName = "Unknown"
+		mode = "Unknown"
 	}
-	if m.commandMode {
-		screenName = "Command"
+	if m.FocusArea == 1 {
+		mode = "Visual"
 	}
-	left := statusLeft.Render(screenName)
+	if m.FocusArea == 3 {
+		mode = "Command"
+	}
+	left := statusLeft.Render(mode)
 	right := statusRight.Render(" KZchat ")
 
 	var change string
@@ -41,7 +44,7 @@ func (m model) View() string {
 	default:
 		change = ""
 	}
-	mid := statusMid.Render(" [tab] switch focus" + change + " • [ctrl+c] quit")
+	mid := statusMid.Render(change + " • [ctrl+z] quit")
 
 	gap := int(math.Max(0, float64(m.width-lipgloss.Width(left+right+mid))))
 	gapString := statusMid.Render(strings.Repeat(" ", gap))

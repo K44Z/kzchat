@@ -40,47 +40,46 @@ var CommandRegistry = map[string]CommandFunc{
 		}
 
 		tempRecipient := ctx.Model.Recipient
-		tempInput := ctx.Model.Input.Value()
+		tempInput := ctx.Model.Textarea.Value()
 		var (
 			chatID int32
-			chat schemas.Chat
+			chat   schemas.Chat
 		)
 
 		chatID, users, err := api.GetChat([]string{api.Config.Username, recipient})
 		if err != nil {
 			var cusError *api.NotFoundErr
-			if errors.As(err, &cusError){
+			if errors.As(err, &cusError) {
 				m := schemas.Message{
-					Content: message,
-					Time: time.Now(),
-					SenderUsername: api.Config.Username,
+					Content:          message,
+					Time:             time.Now(),
+					SenderUsername:   api.Config.Username,
 					ReceiverUsername: recipient,
 				}
-        chat, err = api.CreateChat(m)
-			  if err != nil {
-		   		return err.Error(), nil
-			}
-			ctx.Model.Chat = chat
+				chat, err = api.CreateChat(m)
+				if err != nil {
+					return err.Error(), nil
+				}
+				ctx.Model.Chat = chat
 			} else {
-			   return err.Error(), nil
+				return err.Error(), nil
 			}
 		} else {
 			ctx.Model.Chat.ID = chatID
 			ctx.Model.Recipient = users[1]
 		}
 
-		ctx.Model.Input.SetValue(message)
+		ctx.Model.Textarea.SetValue(message)
 		ctx.Model.SendMessage()
 		ctx.Model.Recipient = tempRecipient
-		ctx.Model.Input.SetValue(tempInput)
+		ctx.Model.Textarea.SetValue(tempInput)
 
 		return "", nil
 	},
 	"open": func(ctx CommandContext, args []string) (string, tea.Cmd) {
-		if len(args) < 1 {
+		if len(args) < 1 || len(args) > 2 {
 			return "Usage: open <username>", nil
 		}
-
 		id, users, err := api.GetChat([]string{api.Config.Username, args[0]})
 		if users == nil || err != nil {
 			return err.Error(), nil

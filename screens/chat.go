@@ -6,93 +6,58 @@ import (
 	"kzchat/server/schemas"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gorilla/websocket"
 )
 
-// var sampleMessages = []schemas.Message{
-// 	{
-// 		Content:        "Hey, are you there?",
-// 		Time:           time.Now(),
-// 		SenderUsername: "Alice",
-// 	},
-// 	{
-// 		Content:        "Yeah, what's up?",
-// 		Time:           time.Now(),
-// 		SenderUsername: "Bob",
-// 	},
-// 	{
-// 		Content:        "Just testing this Bubble Tea UI 😄",
-// 		Time:           time.Date(2023, 1, 1, 10, 3, 0, 0, time.Local),
-// 		SenderUsername: "Alice",
-// 	},
-// 	{
-// 		Content:        "Oh nice! I love terminal UIs.",
-// 		Time:           time.Date(2023, 1, 1, 10, 4, 0, 0, time.Local),
-// 		SenderUsername: "Bob",
-// 	},
-// 	{
-// 		Content:        "Same here. Super fun to build.",
-// 		Time:           time.Date(2023, 1, 1, 10, 5, 0, 0, time.Local),
-// 		SenderUsername: "Alice",
-// 	},
-// 	{
-// 		Content:        "Do you want to add input next?",
-// 		Time:           time.Date(2023, 1, 1, 10, 6, 0, 0, time.Local),
-// 		SenderUsername: "Bob",
-// 	},
-// 	{
-// 		Content:        "Yup! Let's do it.",
-// 		Time:           time.Date(2023, 1, 1, 10, 7, 0, 0, time.Local),
-// 		SenderUsername: "Alice",
-// 	},
-// 	{
-// 		Content:        "This is a simulated system message.",
-// 		Time:           time.Date(2023, 1, 1, 10, 8, 0, 0, time.Local),
-// 		SenderUsername: "System",
-// 	},
-// 	{
-// 		Content:        "Okay, now I'm just spamming.",
-// 		Time:           time.Date(2023, 1, 1, 10, 9, 0, 0, time.Local),
-// 		SenderUsername: "Bob",
-// 	},
-// 	{
-// 		Content:        "😂",
-// 		Time:           time.Date(2023, 1, 1, 10, 10, 0, 0, time.Local),
-// 		SenderUsername: "Alice",
-// 	},
-// }
+type FocusArea int
+
+const (
+	ViewPort FocusArea = iota
+	InputBox
+	CommandBox
+)
 
 type ChatModel struct {
-	Chat        schemas.Chat
-	Messages    []schemas.Message
-	Message     schemas.Message
-	CommandMode bool
-	Command     string
-	Input       textinput.Model
-	Current     schemas.User
-	Recipient   schemas.User
-	Err         string
-	Channels    []string
-	Width       int
-	Height      int
-	Ws          *websocket.Conn
-	Viewport    viewport.Model
-	Content     string
-	Ready       bool
+	Chat      schemas.Chat
+	Messages  []schemas.Message
+	Message   schemas.Message
+	Command   string
+	Current   schemas.User
+	Textarea  textarea.Model
+	Recipient schemas.User
+	Err       string
+	Channels  []string
+	Width     int
+	Height    int
+	Ws        *websocket.Conn
+	Viewport  viewport.Model
+	Content   string
+	Ready     bool
 }
 
 func NewChatModel(width int, height int) *ChatModel {
-	input := textinput.New()
-	input.Prompt = ""
-	input.Focus()
-	input.CharLimit = 500
-	input.Width = 65
+	// input := textinput.New()
+	// input.Prompt = ""
+	// input.Focus()
+	// input.CharLimit = 500
+	// input.Width = 65
 
-	vp := viewport.New(width/3, height-10)
+	ta := textarea.New()
+	ta.Placeholder = "Send a message..."
+	ta.Focus()
+
+	// ta.Prompt = "┃ "
+	ta.CharLimit = 500
+
+	ta.SetWidth(100)
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+
+	ta.ShowLineNumbers = false
+	vp := viewport.New(width, height-10)
 	vp.MouseWheelEnabled = true
 	vp.MouseWheelDelta = 1
 
@@ -103,10 +68,11 @@ func NewChatModel(width int, height int) *ChatModel {
 	m := &ChatModel{
 		Messages: []schemas.Message{},
 		Current:  currentUser,
-		Input:    input,
 		Channels: []string{"general", "random", "dev", "help"},
 		Width:    width,
 		Height:   height,
+		Textarea: ta,
+		Err:      fmt.Sprint("width:", width),
 		Viewport: vp,
 	}
 	str := m.RenderMessages()
@@ -118,31 +84,46 @@ func (m *ChatModel) Init() tea.Cmd {
 	return m.ConnectToWs()
 }
 
-func (m *ChatModel) Update(msg tea.Msg) (*ChatModel, tea.Cmd) {
+func (m *ChatModel) Update(msg tea.Msg, focusedArea int) (*ChatModel, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		m.Err = ""
-		switch msg.String() {
-		case "enter":
-			if m.CommandMode {
-				cmd = m.HandleChatCommand()
-				return m, cmd
-			} else {
-				m.SendMessage()
-				return m, nil
+		switch focusedArea {
+		case 1:
+			switch msg.String() {
+			case "up", "k":
+				m.Viewport.ScrollUp(1)
+			case "down", "j":
+				m.Viewport.ScrollDown(1)
+			case "G":
+				m.Viewport.GotoBottom()
+			case "g":
+				m.Viewport.GotoTop()
+			default:
+				m.Viewport.SetContent(m.RenderMessages())
+				m.Viewport, cmd = m.Viewport.Update(msg)
+				cmds = append(cmds, cmd)
 			}
-		case "up", "k":
-			m.Viewport.ScrollUp(1)
-		case "down", "j":
-			m.Viewport.ScrollDown(1)
+		case 2:
+			m.Textarea, cmd = m.Textarea.Update(msg)
+			cmds = append(cmds, cmd)
 		}
+
+	case ErrMsg:
+		m.Err = msg.Error()
+
+	case tea.WindowSizeMsg:
+		m.Width = msg.Width
+		m.Height = msg.Height
+		m.Viewport.Width = msg.Width / 3
+		m.Viewport.Height = msg.Height - 10
+		m.Viewport.SetContent(m.RenderMessages())
 	}
-	if !m.CommandMode {
-		m.Input, cmd = m.Input.Update(msg)
-		m.Viewport, _ = m.Viewport.Update(msg)
-	}
-	return m, cmd
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m *ChatModel) HandleChatCommand() tea.Cmd {
@@ -154,7 +135,6 @@ func (m *ChatModel) HandleChatCommand() tea.Cmd {
 	if len(parts) == 0 {
 		return nil
 	}
-
 	name := parts[0][1:]
 	args := parts[1:]
 	if handler, ok := CommandRegistry[name]; ok {
@@ -178,6 +158,9 @@ func (m *ChatModel) View() string {
 	contentHeight := m.Height - 7
 
 	leftStyle := lipgloss.NewStyle().
+		Border(lipgloss.ThickBorder(), true, true).
+		BorderStyle(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#85c1dc")).
 		Width(leftWidth).
 		Height(contentHeight).
 		Padding(1, 1).
@@ -206,12 +189,12 @@ func (m *ChatModel) View() string {
 
 	mainContent := lipgloss.JoinHorizontal(lipgloss.Top, leftSection, chatSection, rightSection)
 
-	inputStyle := lipgloss.NewStyle().
-		Width(m.Width-4).
-		Border(lipgloss.NormalBorder(), true, false, false, false).
-		BorderForeground(lipgloss.Color("240"))
+	textareaStyle := lipgloss.NewStyle().
+		Width(m.Width).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("#99d1db"))
 
-	inputSection := inputStyle.Render(m.Input.View())
+	inputSection := textareaStyle.Render(m.Textarea.View())
 
 	var content strings.Builder
 	content.WriteString(mainContent)
@@ -230,7 +213,7 @@ func (m *ChatModel) View() string {
 	return content.String()
 }
 
-func (m ChatModel) renderLeftSidebar() string {
+func (m *ChatModel) renderLeftSidebar() string {
 	var content strings.Builder
 
 	headerStyle := lipgloss.NewStyle().
@@ -260,39 +243,10 @@ func (m ChatModel) renderLeftSidebar() string {
 	return content.String()
 }
 
-func (m ChatModel) RenderMessages() string {
+func (m *ChatModel) RenderMessages() string {
 	var content strings.Builder
-
 	if len(m.Messages) == 0 {
-		// messageStyle := lipgloss.NewStyle().
-		// 	Foreground(lipgloss.Color("15"))
-
-		// timestampStyle := lipgloss.NewStyle().
-		// 	Foreground(lipgloss.Color("240"))
-
-		// usernameStyle := lipgloss.NewStyle().
-		// 	Bold(true).
-		// 	Foreground(lipgloss.Color("14"))
-
-		// for _, msg := range sampleMessages {
-		// 	parts := strings.SplitN(msg.Content, "] ", 2)
-		// 	if len(parts) == 2 {
-		// 		timestamp := timestampStyle.Render(parts[0] + "]")
-
-		// 		msgParts := strings.SplitN(parts[1], ": ", 2)
-		// 		if len(msgParts) == 2 {
-		// 			username := usernameStyle.Render(msgParts[0])
-		// 			message := messageStyle.Render(msgParts[1])
-		// 			content.WriteString(fmt.Sprintf("%s %s: %s\n", timestamp, username, message))
-		// 		}
-		// 	}
-		// }
-
-		content.WriteString("\n")
-		promptStyle := lipgloss.NewStyle().
-			Italic(true).
-			Foreground(lipgloss.Color("240"))
-		content.WriteString(promptStyle.Render("Type a message to start chatting..."))
+		content.WriteString(m.renderGuide(m.Width + 50))
 	} else {
 		timestampStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("240"))
@@ -336,4 +290,26 @@ func (m ChatModel) renderRightSidebar() string {
 	content.WriteString("Latency: 25ms\n")
 	content.WriteString(fmt.Sprintf("\nMessages: %d", len(m.Messages)))
 	return content.String()
+}
+
+func (m ChatModel) renderGuide(width int) string {
+	content := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#8839ef")).
+		Width(width + 10).
+		Render(`
+Welcome to kzchat. This chat app lets you talk to users in a clean, minimal interface.
+
+Available commands:
+  - open <username>         → Open chat with a user
+  - dm <username> <message> → Send a direct message without opening chat
+
+Controls:
+  - Press [i]               → Enter input mode
+  - Press [:]               → Open command bar
+  - Press [esc]             → Exit current input mode
+  - Press [q] or [Ctrl+C]   → Quit the app
+`)
+
+	return content
 }

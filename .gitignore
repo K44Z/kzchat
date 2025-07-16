@@ -29,3 +29,4 @@ yarn-error.log*
 *.tmp
 .cache/
 server/tmp
+tmp/

@@ -14,7 +14,7 @@ func (m *model) Init() tea.Cmd {
 }
 
 var quitKeys = key.NewBinding(
-	key.WithKeys("ctrl+c", "ctrl+z", "q"),
+	key.WithKeys("ctrl+z", "q"),
 	key.WithHelp("q", "quit"),
 )
 
@@ -37,28 +37,55 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		switch {
-		case !m.commandMode && msg.String() == "`":
-			m.commandMode = true
-			m.chat.CommandMode = true
-			m.command.Focus()
-
-		case m.commandMode && msg.String() == "enter":
-			command := strings.TrimSpace(m.command.Value())
-			if command != "" {
-				m.handleCommand(command)
+		switch msg.String() {
+		case ":":
+			if m.FocusArea == 1 {
+				var cmd tea.Cmd
+				m.FocusArea = 3
+				m.command.Focus()
+				m.command, cmd = m.command.Update(msg)
+				return m, cmd
 			}
-			m.command.Reset()
-			m.command.Blur()
-			m.commandMode = false
-
-		case m.commandMode && (msg.String() == "esc" || m.command.Value() == ""):
-			m.command.Reset()
-			m.command.Blur()
-			m.commandMode = false
-			m.chat.CommandMode = false
+		case "i":
+			if m.FocusArea == 1 {
+				m.FocusArea = 2
+				m.chat.Textarea.Focus()
+				return m, nil
+			}
+		case "esc":
+			switch m.FocusArea {
+			case 3:
+				m.command.Reset()
+				m.command.Blur()
+			case 2:
+				m.chat.Textarea.Blur()
+			}
+			m.FocusArea = 1
+		case "enter":
+			switch m.FocusArea {
+			case 3:
+				command := strings.TrimSpace(m.command.Value())
+				var cmd tea.Cmd
+				if command != "" {
+					cmd = m.handleCommand(command)
+				}
+				m.command.Reset()
+				m.command.Blur()
+				m.FocusArea = 2
+				return m, cmd
+			case 2:
+				m.chat.SendMessage()
+				m.chat.Textarea.Reset()
+				m.chat.Textarea.Focus()
+			}
 		}
 
+		switch m.FocusArea {
+		case 3:
+			var cmd tea.Cmd
+			m.command, cmd = m.command.Update(msg)
+			cmds = append(cmds, cmd)
+		}
 		switch m.currentScreen {
 		case screens.SignupScreen:
 			var cmd tea.Cmd
@@ -74,15 +101,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.chat.Width = m.width
 			m.chat.Height = m.height
 			var cmd tea.Cmd
-			m.chat, cmd = m.chat.Update(msg)
+			m.chat, cmd = m.chat.Update(msg, int(m.FocusArea))
 			cmds = append(cmds, cmd)
 		}
+
 	case screens.ScreenMsg:
 		m.currentScreen = screens.Screen(msg)
 		if m.currentScreen == screens.ChatScreen {
 			m.chat = screens.NewChatModel(m.width, m.height)
 			cmd := m.chat.Init()
-			// cmds = append(cmds, fetchMessages(m.chat.recipient))
+			m.FocusArea = 2
 			return m, cmd
 		}
 		return m, nil
@@ -95,37 +123,37 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.chat.Messages = append(m.chat.Messages, scMesasge)
 		var cmd tea.Cmd
-		m.chat, cmd = m.chat.Update(msg)
+		m.chat, cmd = m.chat.Update(msg, int(m.FocusArea))
 		return m, cmd
 
 	case screens.WsConnectedMsg:
 		m.chat.Ws = msg.Conn
 		go m.chat.ReadLoop(msg.Conn)
 		return m, nil
+
 	case screens.ChatFetchedMsg:
 		m.chat.Messages = msg.Messages
 		m.chat.Viewport.SetContent(m.chat.RenderMessages())
 		m.chat.Viewport.GotoBottom()
 		return m, nil
+
 	case screens.ErrMsg:
 		m.chat.Err = msg.Error()
+
 	default:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-	if m.commandMode {
-		var cmd tea.Cmd
-		m.command, cmd = m.command.Update(msg)
-		cmds = append(cmds, cmd)
-	} else {
-		m.chat.Input.Focus()
-	}
+
 	return m, tea.Batch(cmds...)
 }
 
-func (m *model) handleCommand(cmd string) {
+func (m *model) handleCommand(c string) tea.Cmd {
 	if m.currentScreen == screens.ChatScreen {
-		m.chat.Command = cmd
+		m.chat.Command = c
+		cmd := m.chat.HandleChatCommand()
+		return cmd
 	}
+	return nil
 }

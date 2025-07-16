@@ -15,10 +15,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func GetMessages(c *fiber.Ctx) error {
-	return nil
-}
-
 func GetDmsByrecipientUsername(c *fiber.Ctx) error {
 	username := c.Params("username")
 	ctx := context.Background()

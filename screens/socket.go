@@ -88,7 +88,7 @@ func (m *ChatModel) FetchMessages() tea.Cmd {
 }
 
 func (m *ChatModel) SendMessage() {
-	inputValue := strings.TrimSpace(m.Input.Value())
+	inputValue := strings.TrimSpace(m.Textarea.Value())
 	if m.Recipient.ID == 0 || m.Recipient.Username == "" {
 		m.Err = "Please select a recipient before sending a message"
 		return
@@ -116,6 +116,6 @@ func (m *ChatModel) SendMessage() {
 		m.Messages = append(m.Messages, message)
 		m.Viewport.SetContent(m.RenderMessages())
 		m.Viewport.GotoBottom()
-		m.Input.Reset()
+		m.Textarea.Reset()
 	}
 }

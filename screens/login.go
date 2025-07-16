@@ -41,7 +41,7 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 	case tea.KeyMsg:
 		m.err = ""
 		switch msg.String() {
-		case ":":
+		case "`":
 			return m, func() tea.Msg {
 				return ScreenMsg(SignupScreen)
 			}

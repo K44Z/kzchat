@@ -13,7 +13,6 @@ import (
 	// "net/http"
 )
 
-
 var (
 	primaryColor   = lipgloss.Color("#1e1e2e")
 	secondaryColor = lipgloss.Color("#00FFFF")
@@ -72,7 +71,7 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 	case tea.KeyMsg:
 		m.err = ""
 		switch msg.String() {
-		case ":":
+		case "`":
 			return m, func() tea.Msg {
 				return ScreenMsg(LoginScreen)
 			}

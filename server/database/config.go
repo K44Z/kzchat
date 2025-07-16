@@ -11,7 +11,7 @@ import (
 
 var Queries *repository.Queries
 var DbConn *pgxpool.Pool
-var err error 
+var err error
 
 func ConnectDb() error {
 	DB_URL := os.Getenv("DB_URL")
