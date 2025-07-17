@@ -20,16 +20,31 @@ var quitKeys = key.NewBinding(
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		if m.chat != nil {
-			m.chat.Width = msg.Width
-			m.chat.Height = msg.Height
+
+		switch m.currentScreen {
+		case screens.ChatScreen:
+			var cmd tea.Cmd
+			m.chat, cmd = m.chat.Update(msg, int(m.FocusArea))
+			cmds = append(cmds, cmd)
+		case screens.LoginScreen:
+			if m.login != nil {
+				var cmd tea.Cmd
+				m.login, cmd = m.login.Update(msg)
+				cmds = append(cmds, cmd)
+			}
+		case screens.SignupScreen:
+			if m.signup != nil {
+				var cmd tea.Cmd
+				m.signup, cmd = m.signup.Update(msg)
+				cmds = append(cmds, cmd)
+			}
 		}
-		return m, nil
+		m.command.Width = msg.Width - 4
+		return m, tea.Batch(cmds...)
 
 	case tea.KeyMsg:
 		if key.Matches(msg, quitKeys) {
@@ -72,6 +87,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.command.Reset()
 				m.command.Blur()
 				m.FocusArea = 2
+				m.chat.Textarea.Focus()
 				return m, cmd
 			case 2:
 				m.chat.SendMessage()

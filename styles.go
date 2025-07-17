@@ -25,13 +25,24 @@ var layoutStyle = lipgloss.NewStyle().
 	Padding(1, 2).
 	Margin(0)
 
-var statusLeft = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#eff1f5")).
-	Background(lipgloss.Color("#8839ef")).
-	Padding(0, 1).
-	Bold(true).
-	BorderRight(true).
-	BorderForeground(lipgloss.Color("#89b4fa"))
+func StatusStyle(mode string) lipgloss.Style {
+	var background string
+	switch mode {
+	case "Insert":
+		background = "#85c1dc"
+	case "Command":
+		background = "#babbf1"
+	case "Normal":
+		background = "#585b70"
+	default:
+		background = "#8839ef"
+	}
+	return lipgloss.NewStyle().Foreground(lipgloss.Color("#eff1f5")).
+		Background(lipgloss.Color(background)).
+		Padding(0, 1).
+		Bold(true).BorderRight(true).
+		BorderForeground(lipgloss.Color("#89b4fa"))
+}
 
 var statusRight = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#eff1f5")).

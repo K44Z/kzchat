@@ -20,19 +20,23 @@ func (m model) View() string {
 		mode = "Signup Screen"
 	case screens.ChatScreen:
 		content = m.chat.View()
-		mode = "Chat Screen"
+		switch m.FocusArea {
+		case 1:
+			mode = "Normal"
+		case 3:
+			mode = "Command"
+		case 2:
+			mode = "Insert"
+		default:
+			mode = "Chat Screen"
+		}
 	default:
 		content = "Unknown screen"
 		mode = "Unknown"
 	}
-	if m.FocusArea == 1 {
-		mode = "Visual"
-	}
-	if m.FocusArea == 3 {
-		mode = "Command"
-	}
-	left := statusLeft.Render(mode)
-	right := statusRight.Render(" KZchat ")
+
+	left := StatusStyle(mode).Render(mode)
+	right := StatusStyle(mode).Render((" KZchat "))
 
 	var change string
 
