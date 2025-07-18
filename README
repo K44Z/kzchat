@@ -1,4 +1,3 @@
-````markdown
 # kzchat
 
 Self-hosted Vim-style terminal chat built with Go.
@@ -25,7 +24,7 @@ Clone the repo:
 ```bash
 git clone https://github.com/yourusername/kzchat.git
 cd kzchat
-````
+```
 
 Run the install script (will build client/server and configure `.env`):
 
@@ -51,8 +50,8 @@ kzchat
 
 ## Development
 
-* Use `go build` to compile binaries in `./cmd/tui` and `./cmd/server`.
-* Run migrations with:
+- Use `go build` to compile binaries in `./cmd/tui` and `./cmd/server`.
+- Run migrations with:
 
 ```bash
 migrate -path ./migrations -database "$DB_URL" up
@@ -61,5 +60,3 @@ migrate -path ./migrations -database "$DB_URL" up
 ## License
 
 MIT License. See [LICENSE](LICENSE).
-
-```
