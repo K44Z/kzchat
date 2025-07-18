@@ -1,3 +1,9 @@
+[![Fiber](https://img.shields.io/badge/Fiber-Backend-blue)](https://github.com/gofiber/fiber)
+[![Bubble Tea](https://img.shields.io/badge/Bubble%20Tea-TUI-orange)](https://github.com/charmbracelet/bubbletea)
+[![SQLC](https://img.shields.io/badge/SQLC-DB%20Queries-green)](https://github.com/kyleconroy/sqlc)
+[![golang-migrate](https://img.shields.io/badge/golang--migrate-Migrations-yellow)](https://github.com/golang-migrate/migrate)
+[![Go](https://img.shields.io/badge/Go-1.20+-brightgreen)](https://go.dev)
+
 # kzchat
 
 Self-hosted Vim-style terminal chat built with Go.
