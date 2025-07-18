@@ -1,4 +1,4 @@
-module kzchat
+module github.com/K44Z/kzchat
 
 go 1.24
 
