@@ -3,7 +3,7 @@ package main
 import (
 	s "github.com/K44Z/kzchat/pkg/screens"
 
-	a "github.com/K44Z/kzchat/internal/api"
+	"github.com/K44Z/kzchat/internal/api"
 	"github.com/K44Z/kzchat/internal/helpers"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -32,12 +32,12 @@ func Init() tea.Cmd {
 
 func NewModel() model {
 	var m model
-	a.ReadConfig()
+	api.ReadConfig()
 	command := textinput.New()
 	command.CharLimit = 256
 	command.Prompt = ""
 	m.command = command
-	if a.Config.Token == "" || err != nil || !a.IsTokenValid(a.Config.Token) {
+	if api.Config.Token == "" || err != nil || !api.IsTokenValid(api.Config.Token) {
 		helpers.Logger.Println(err)
 		m.currentScreen = s.LoginScreen
 		m.login = s.NewLoginModel()

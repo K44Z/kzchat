@@ -3,9 +3,11 @@ package screens
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/K44Z/kzchat/internal/api"
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -91,7 +93,8 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 					m.err = "Error preparing request: " + err.Error()
 					return m, nil
 				}
-				resp, err := http.Post("http://localhost:4000/auth/register", "application/json", bytes.NewBuffer(jsonData))
+				url := fmt.Sprintf("%s/auth/login", api.BASE_URL)
+				resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 				if err != nil {
 					m.err = "Error sending request: " + err.Error()
 					return m, nil

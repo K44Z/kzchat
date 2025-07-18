@@ -15,11 +15,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	API_URL = "http://localhost:4000"
-	WS_URL  = "ws://localhost:4000"
-)
-
 type WsMsg schemas.Message
 type ErrMsg error
 type WsConnectedMsg struct {
@@ -44,7 +39,7 @@ func (m *ChatModel) ConnectToWs() tea.Cmd {
 	return func() tea.Msg {
 		header := http.Header{}
 		header.Add("Authorization", "Bearer "+api.Config.Token)
-		c, _, err := websocket.DefaultDialer.Dial(WS_URL+"/ws", header)
+		c, _, err := websocket.DefaultDialer.Dial(api.WS_URL+"/ws", header)
 		if err != nil {
 			return ErrMsg(err)
 		}
@@ -65,7 +60,7 @@ func (m *ChatModel) ReadLoop(conn *websocket.Conn) {
 func (m *ChatModel) FetchMessages() tea.Cmd {
 	return func() tea.Msg {
 		client := &http.Client{}
-		req, err := http.NewRequest("GET", API_URL+"/messages/recipient/"+string(m.Recipient.Username), nil)
+		req, err := http.NewRequest("GET", api.BASE_URL+"/messages/recipient/"+string(m.Recipient.Username), nil)
 		if err != nil {
 			return ErrMsg(err)
 		}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/K44Z/kzchat/configs"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/joho/godotenv"
 )
@@ -16,7 +17,7 @@ func main() {
 	if err := godotenv.Load(envPath); err != nil {
 		log.Fatal("error loading env file from :", envPath)
 	}
-
+	configs.SetBaseUrl()
 	m := NewModel()
 	Program = tea.NewProgram(&m, tea.WithAltScreen())
 	if err := Program.Start(); err != nil {

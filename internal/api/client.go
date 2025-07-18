@@ -17,6 +17,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+var BASE_URL string
+var WS_URL string
+
 type Claims struct {
 	Username string `json:"username"`
 	Sub      string `json:"sub"`
@@ -105,8 +108,8 @@ func GetChat(m []string) (int32, []schemas.User, error) {
 	if err != nil {
 		return 0, nil, fmt.Errorf("error marshaling data: %w", err)
 	}
-
-	req, err := http.NewRequest("POST", "http://localhost:4000/messages/chat", bytes.NewBuffer(jsonData))
+	url := fmt.Sprintf("%s/messages/chat", BASE_URL)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return 0, nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -149,7 +152,8 @@ func CreateChat(message schemas.Message) (schemas.Chat, error) {
 	if err != nil {
 		return schemas.Chat{}, fmt.Errorf("error marshaling data: %w", err)
 	}
-	req, err := http.NewRequest("POST", "http://localhost:4000/messages/createChat", bytes.NewBuffer(jsonData))
+	url := fmt.Sprintf("%s/messages/createChat", BASE_URL)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return schemas.Chat{}, fmt.Errorf("error creating request : %w", err)
 	}

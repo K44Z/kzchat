@@ -3,6 +3,7 @@ package screens
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"net/http"
@@ -63,7 +64,8 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 					m.err = "Error preparing request: " + err.Error()
 					return m, nil
 				}
-				resp, err := http.Post("http://localhost:4000/auth/login", "application/json", bytes.NewBuffer(jsonData))
+				url := fmt.Sprintf("%s/auth/login", api.BASE_URL)
+				resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 				if err != nil {
 					m.err = "Error sending request: " + err.Error()
 					return m, nil

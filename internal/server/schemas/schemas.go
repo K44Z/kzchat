@@ -47,6 +47,6 @@ type User struct {
 }
 
 type CreateChatByMessage struct {
-	Members []string  `json:"members" validate:"required"`
-	Message Message	  `json:"message" validate:"required"`
+	Members []string `json:"members" validate:"required"`
+	Message Message  `json:"message" validate:"required"`
 }
