@@ -16,7 +16,7 @@ func (m *model) Init() tea.Cmd {
 }
 
 var quitKeys = key.NewBinding(
-	key.WithKeys("ctrl+z", "q"),
+	key.WithKeys("ctrl+z"),
 	key.WithHelp("q", "quit"),
 )
 
