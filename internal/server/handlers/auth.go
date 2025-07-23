@@ -65,7 +65,7 @@ func Login(c *fiber.Ctx) error {
 	if errors.Is(err, pgx.ErrNoRows) {
 		log.Println(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "User already exists",
+			"message": "User not found",
 		})
 	} else if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
