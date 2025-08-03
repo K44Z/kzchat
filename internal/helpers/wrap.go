@@ -1,6 +1,8 @@
 package helpers
 
-import "strings"
+import (
+	"strings"
+)
 
 func WrapText(text string, width int) []string {
 	if width <= 0 {

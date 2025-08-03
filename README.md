@@ -4,9 +4,6 @@
 [![golang-migrate](https://img.shields.io/badge/golang--migrate-Migrations-yellow)](https://github.com/golang-migrate/migrate)
 [![Go](https://img.shields.io/badge/Go-1.20+-brightgreen)](https://go.dev)
 
-<p align="center">
-  <img alt="Status" src="https://img.shields.io/badge/status-under--development-orange" />
-</p>
 
 > 🚧 **This project is under active development. Not production-ready.**
 # kzchat

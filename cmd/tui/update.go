@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/K44Z/kzchat/internal/api"
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/K44Z/kzchat/pkg/screens"
@@ -17,7 +19,6 @@ func (m *model) Init() tea.Cmd {
 
 var quitKeys = key.NewBinding(
 	key.WithKeys("ctrl+z"),
-	key.WithHelp("q", "quit"),
 )
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -70,14 +71,24 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "esc":
+			var cmd tea.Cmd
 			switch m.FocusArea {
 			case 3:
 				m.command.Reset()
 				m.command.Blur()
+				m.FocusArea = 1
 			case 2:
 				m.chat.Textarea.Blur()
+				m.FocusArea = 1
+			case 4:
+				if !m.List.FilterInput.Focused() {
+					m.FocusArea = 1
+					m.chat, cmd = m.chat.Update(msg, 1)
+					return m, cmd
+				}
 			}
 			m.FocusArea = 1
+			return m, cmd
 		case "enter":
 			switch m.FocusArea {
 			case 3:
@@ -95,7 +106,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.chat.SendMessage()
 				m.chat.Textarea.Reset()
 				m.chat.Textarea.Focus()
+			case 4:
+				var cmd tea.Cmd
+				selectedItem := m.List.SelectedItem().(schemas.User)
+				cmd, err = m.handleRecipientSelection(selectedItem)
+				if err != nil {
+					return m, nil
+				}
+				m.FocusArea = 1
+				return m, cmd
 			}
+		case "/":
+			m.FocusArea = 4
 		}
 
 		switch m.FocusArea {
@@ -123,8 +145,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 
-	case screens.ScreenMsg:
-		m.currentScreen = screens.Screen(msg)
+	case api.ScreenMsg:
+		m.currentScreen = api.Screen(msg)
 		if m.currentScreen == screens.ChatScreen {
 			m.chat = screens.NewChatModel(m.width, m.height)
 			cmd := m.chat.Init()
@@ -133,29 +155,29 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case screens.WsMsg:
+	case api.WsMsg:
 		scMesasge := schemas.Message{
-			Content:        msg.Content,
-			Time:           msg.Time,
-			SenderUsername: msg.SenderUsername,
+			Content: msg.Content,
+			Time:    msg.Time,
+			Sender:  msg.Sender,
 		}
 		m.chat.Messages = append(m.chat.Messages, scMesasge)
 		var cmd tea.Cmd
 		m.chat, cmd = m.chat.Update(msg, int(m.FocusArea))
 		return m, cmd
 
-	case screens.WsConnectedMsg:
+	case api.WsConnectedMsg:
 		m.chat.Ws = msg.Conn
 		go m.chat.ReadLoop(msg.Conn)
 		return m, nil
 
-	case screens.ChatFetchedMsg:
+	case api.ChatFetchedMsg:
 		m.chat.Messages = msg.Messages
 		m.chat.Viewport.SetContent(m.chat.RenderMessages())
 		m.chat.Viewport.GotoBottom()
 		return m, nil
 
-	case screens.ErrMsg:
+	case api.ErrMsg:
 		m.chat.Err = msg.Error()
 
 	default:
@@ -163,7 +185,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-
+	var cmd tea.Cmd
+	m.List, cmd = m.List.Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
@@ -174,4 +198,21 @@ func (m *model) handleCommand(c string) tea.Cmd {
 		return cmd
 	}
 	return nil
+}
+
+func (m *model) handleRecipientSelection(r schemas.User) (tea.Cmd, error) {
+	id, users, err := api.GetChat([]string{api.Config.Username, r.Username})
+	if users == nil || err != nil {
+		return nil, err
+	}
+	chat := schemas.Chat{
+		Name: fmt.Sprint(api.Config.Username, " - ", r.Username),
+		ID:   id,
+	}
+	m.chat.Chat = chat
+	m.chat.Recipient.Username = r.Username
+	cmd := m.chat.FetchMessages()
+	m.chat.Current = users[0]
+	m.chat.Recipient = users[1]
+	return cmd, nil
 }

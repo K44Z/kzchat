@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/K44Z/kzchat/internal/server/schemas"
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/gorilla/websocket"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -34,9 +36,29 @@ type GetChatResponse struct {
 type CreateChatResponse struct {
 	Chat schemas.Chat `json:"chat"`
 }
+
 type NotFoundErr struct {
 	Msg string
 }
+
+type UserListReponse struct {
+	Users []schemas.User `json:"users"`
+}
+
+type ErrMsg error
+
+type WsMsg schemas.Message
+
+type WsConnectedMsg struct {
+	Conn *websocket.Conn
+}
+
+type ChatFetchedMsg struct {
+	Messages []schemas.Message
+}
+
+type Screen int
+type ScreenMsg Screen
 
 func (e *NotFoundErr) Error() string {
 	return fmt.Sprint(e.Msg)
@@ -146,7 +168,7 @@ func GetChat(m []string) (int32, []schemas.User, error) {
 func CreateChat(message schemas.Message) (schemas.Chat, error) {
 	client := &http.Client{}
 	jsonData, err := json.Marshal(map[string]any{
-		"members": []string{message.SenderUsername, message.ReceiverUsername},
+		"members": []string{message.Sender.Username, message.Receiver.Username},
 		"message": message,
 	})
 	if err != nil {
@@ -180,4 +202,35 @@ func CreateChat(message schemas.Message) (schemas.Chat, error) {
 		return schemas.Chat{}, fmt.Errorf("error unmarshaling response: %w", err)
 	}
 	return result.Chat, nil
+}
+
+func GetUsers() ([]list.Item, error) {
+	client := http.Client{}
+	req, err := http.NewRequest("GET", BASE_URL+"/users/usernames/all", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+Config.Token)
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected status code :%d", response.StatusCode)
+	}
+	if response.StatusCode != http.StatusOK {
+		return nil, err
+	}
+	var userList UserListReponse
+	body, err := io.ReadAll(response.Body)
+	err = json.Unmarshal(body, &userList)
+	if err != nil {
+		return nil, err
+	}
+	var result []list.Item
+	for _, v := range userList.Users {
+		result = append(result, schemas.User{
+			Username: v.Username,
+			ID:       v.ID,
+		})
+	}
+	return result, nil
 }

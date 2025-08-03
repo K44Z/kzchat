@@ -15,20 +15,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type WsMsg schemas.Message
-type ErrMsg error
-type WsConnectedMsg struct {
-	Conn *websocket.Conn
-}
-
-type ChatFetchedMsg struct {
-	Messages []schemas.Message
-}
-type Screen int
-type ScreenMsg Screen
-
 const (
-	SignupScreen Screen = iota
+	SignupScreen api.Screen = iota
 	LoginScreen
 	ChatScreen
 )
@@ -41,9 +29,9 @@ func (m *ChatModel) ConnectToWs() tea.Cmd {
 		header.Add("Authorization", "Bearer "+api.Config.Token)
 		c, _, err := websocket.DefaultDialer.Dial(api.WS_URL+"/ws", header)
 		if err != nil {
-			return ErrMsg(err)
+			return api.ErrMsg(err)
 		}
-		return WsConnectedMsg{c}
+		return api.WsConnectedMsg{c}
 	}
 }
 
@@ -53,7 +41,7 @@ func (m *ChatModel) ReadLoop(conn *websocket.Conn) {
 		if err := conn.ReadJSON(&msg); err != nil {
 			break
 		}
-		Messages <- WsMsg{Content: msg.Content, Time: msg.Time, SenderUsername: msg.SenderUsername}
+		Messages <- api.WsMsg{Content: msg.Content, Time: msg.Time, Sender: msg.Sender}
 	}
 }
 
@@ -62,27 +50,27 @@ func (m *ChatModel) FetchMessages() tea.Cmd {
 		client := &http.Client{}
 		req, err := http.NewRequest("GET", api.BASE_URL+"/messages/recipient/"+string(m.Recipient.Username), nil)
 		if err != nil {
-			return ErrMsg(err)
+			return api.ErrMsg(err)
 		}
 		req.Header.Add("Authorization", "Bearer "+api.Config.Token)
 		resp, err := client.Do(req)
 		if err != nil {
-			return ErrMsg(err)
+			return api.ErrMsg(err)
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			return err
+			return api.ErrMsg(err)
 		}
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return ErrMsg(err)
+			return api.ErrMsg(err)
 		}
 		var messages []schemas.Message
 		if err := json.Unmarshal(body, &messages); err != nil {
-			return ErrMsg(err)
+			return api.ErrMsg(err)
 		}
 		m.Messages = messages
-		return ChatFetchedMsg{Messages: messages}
+		return api.ChatFetchedMsg{Messages: messages}
 	}
 }
 
@@ -94,11 +82,13 @@ func (m *ChatModel) SendMessage() {
 	}
 	if inputValue != "" {
 		message := schemas.Message{
-			Content:          inputValue,
-			SenderUsername:   api.Config.Username,
-			Time:             time.Now(),
-			Chat:             m.Chat,
-			ReceiverUsername: m.Recipient.Username,
+			Content: inputValue,
+			Sender: schemas.User{
+				Username: api.Config.Username,
+			},
+			Time:     time.Now(),
+			Chat:     m.Chat,
+			Receiver: m.Recipient,
 		}
 		if m.Ws == nil {
 			if m.Err != "" {

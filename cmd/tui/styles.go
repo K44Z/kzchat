@@ -34,8 +34,10 @@ func StatusStyle(mode string) lipgloss.Style {
 		background = "#babbf1"
 	case "Normal":
 		background = "#585b70"
+	case "Search":
+		background = "#c6a0f6"
 	default:
-		background = "#8839ef"
+		background = "#b7bdf8"
 	}
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("#eff1f5")).
 		Background(lipgloss.Color(background)).

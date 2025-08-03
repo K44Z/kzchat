@@ -75,7 +75,7 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 		switch msg.String() {
 		case "`":
 			return m, func() tea.Msg {
-				return ScreenMsg(LoginScreen)
+				return api.ScreenMsg(LoginScreen)
 			}
 		case "tab":
 			m.focusIndex = (m.focusIndex + 1) % 3
@@ -103,7 +103,7 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 				defer resp.Body.Close()
 				if resp.StatusCode == 201 {
 					return m, func() tea.Msg {
-						return ScreenMsg(LoginScreen)
+						return api.ScreenMsg(LoginScreen)
 					}
 				} else {
 					var response map[string]string

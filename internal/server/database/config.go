@@ -2,29 +2,30 @@ package database
 
 import (
 	"context"
-	"log"
-	"os"
 
-	repository "github.com/K44Z/kzchat/internal/server/database/generated"
-
+	"github.com/K44Z/kzchat/configs"
+	sqlc "github.com/K44Z/kzchat/internal/server/database/generated"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var Queries *repository.Queries
-var DbConn *pgxpool.Pool
 var err error
 
-func ConnectDb() error {
-	DB_URL := os.Getenv("DB_URL")
-	DbConn, err = pgxpool.New(context.Background(), DB_URL)
+type DB struct {
+	DBTX sqlc.DBTX
+	Pool *pgxpool.Pool
+}
+
+func ConnectDb(c *configs.Config) (*DB, error) {
+	conn, err := pgxpool.New(context.Background(), c.DbUrl)
 	if err != nil {
-		log.Fatal("failed to connect to db :", err)
-		return err
+		return nil, err
 	}
-	err = DbConn.Ping(context.Background())
+	err = conn.Ping(context.Background())
 	if err != nil {
-		log.Fatal("Failed to ping DB:", err)
+		return nil, err
 	}
-	Queries = repository.New(DbConn)
-	return nil
+	return &DB{
+		DBTX: conn,
+		Pool: conn,
+	}, nil
 }

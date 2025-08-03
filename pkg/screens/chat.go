@@ -45,6 +45,7 @@ type ChatModel struct {
 	Viewport      viewport.Model
 	Content       string
 	Ready         bool
+	ListView      bool
 }
 
 func NewChatModel(width int, height int) *ChatModel {
@@ -84,7 +85,6 @@ func NewChatModel(width int, height int) *ChatModel {
 	currentUser := schemas.User{
 		Username: api.Config.Username,
 	}
-
 	m := &ChatModel{
 		Messages:      []schemas.Message{},
 		Current:       currentUser,
@@ -116,7 +116,6 @@ func (m *ChatModel) Update(msg tea.Msg, focusedArea int) (*ChatModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		m.Err = ""
-		// m.Err = fmt.Sprintf("width : %v, height : %v", m.Width, m.Height)
 		switch focusedArea {
 		case 1:
 			switch msg.String() {
@@ -137,8 +136,7 @@ func (m *ChatModel) Update(msg tea.Msg, focusedArea int) (*ChatModel, tea.Cmd) {
 			m.Textarea, cmd = m.Textarea.Update(msg)
 			cmds = append(cmds, cmd)
 		}
-
-	case ErrMsg:
+	case api.ErrMsg:
 		m.Err = msg.Error()
 
 	case tea.WindowSizeMsg:
@@ -189,7 +187,7 @@ func (m *ChatModel) HandleChatCommand() tea.Cmd {
 		output, cmd = handler(CommandContext{Model: m}, args)
 		if output != "" {
 			return func() tea.Msg {
-				return ErrMsg(fmt.Errorf("%s", output))
+				return api.ErrMsg(fmt.Errorf("%s", output))
 			}
 		}
 	} else {
@@ -342,7 +340,7 @@ func (m *ChatModel) RenderMessages() string {
 
 		for _, msg := range m.Messages {
 			timestamp := timestampStyle.Render(fmt.Sprintf("[%s]", msg.Time.Format("15:04")))
-			username := usernameStyle.Render(msg.SenderUsername)
+			username := usernameStyle.Render(msg.Sender.Username)
 			wrapped := helpers.WrapText(msg.Content, m.Viewport.Width)
 			var renderedLines []string
 			for i, line := range wrapped {

@@ -46,7 +46,7 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 		switch msg.String() {
 		case "`":
 			return m, func() tea.Msg {
-				return ScreenMsg(SignupScreen)
+				return api.ScreenMsg(SignupScreen)
 			}
 		case "tab":
 			m.focusIndex = (m.focusIndex + 1) % 3
@@ -81,7 +81,7 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 						api.SaveConfig(config)
 					}
 					return m, func() tea.Msg {
-						return ScreenMsg(ChatScreen)
+						return api.ScreenMsg(ChatScreen)
 					}
 				} else {
 					if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {

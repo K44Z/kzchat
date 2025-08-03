@@ -18,11 +18,11 @@ func (a Auth) Read(p []byte) (n int, err error) {
 }
 
 type Message struct {
-	Content          string    `json:"content"`
-	Time             time.Time `json:"time"`
-	SenderUsername   string    `json:"senderUsername"`
-	ReceiverUsername string    `json:"receiverUsername"`
-	Chat             Chat      `json:"chat"`
+	Content  string    `json:"content"`
+	Time     time.Time `json:"time"`
+	Sender   User      `json:"sender"`
+	Receiver User      `json:"receiver"`
+	Chat     Chat      `json:"chat"`
 }
 
 type Chat struct {
@@ -46,7 +46,22 @@ type User struct {
 	Username string
 }
 
+type InternalUser struct {
+	ID       int32
+	Username string
+	Password string
+}
+
 type CreateChatByMessage struct {
 	Members []string `json:"members" validate:"required"`
 	Message Message  `json:"message" validate:"required"`
+}
+
+func (u User) FilterValue() string {
+	return u.Username
+}
+
+type ChatMember struct {
+	ChatId int32 `json:"chatId" validate:"required"`
+	UserId int32 `json:"userId" validate:"required"`
 }

@@ -21,9 +21,9 @@ type CommandContext struct {
 type CommandFunc func(ctx CommandContext, args []string) (string, tea.Cmd)
 
 var CommandRegistry = map[string]CommandFunc{
-	"quit": func(ctx CommandContext, args []string) (string, tea.Cmd) {
+	"q": func(ctx CommandContext, args []string) (string, tea.Cmd) {
 		os.Exit(0)
-		return "", nil
+		return "", tea.Quit
 	},
 	"clear": func(ctx CommandContext, args []string) (string, tea.Cmd) {
 		ctx.Model.Messages = nil
@@ -53,10 +53,14 @@ var CommandRegistry = map[string]CommandFunc{
 			var cusError *api.NotFoundErr
 			if errors.As(err, &cusError) {
 				m := schemas.Message{
-					Content:          message,
-					Time:             time.Now(),
-					SenderUsername:   api.Config.Username,
-					ReceiverUsername: recipient,
+					Content: message,
+					Time:    time.Now(),
+					Sender: schemas.User{
+						Username: api.Config.Username,
+					},
+					Receiver: schemas.User{
+						Username: recipient,
+					},
 				}
 				chat, err = api.CreateChat(m)
 				if err != nil {

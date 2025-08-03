@@ -3,7 +3,7 @@
 //   sqlc v1.29.0
 // source: user.sql
 
-package repository
+package sqlc
 
 import (
 	"context"
@@ -52,7 +52,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const getUsernameById = `-- name: GetUsernameById :one
-SELECT username FROM users 
+SELECT username FROM users
 WHERE id = $1
 `
 
@@ -61,4 +61,33 @@ func (q *Queries) GetUsernameById(ctx context.Context, id int32) (string, error)
 	var username string
 	err := row.Scan(&username)
 	return username, err
+}
+
+const getUsers = `-- name: GetUsers :many
+SELECT username, id FROM users
+`
+
+type GetUsersRow struct {
+	Username string
+	ID       int32
+}
+
+func (q *Queries) GetUsers(ctx context.Context) ([]GetUsersRow, error) {
+	rows, err := q.db.Query(ctx, getUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUsersRow
+	for rows.Next() {
+		var i GetUsersRow
+		if err := rows.Scan(&i.Username, &i.ID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

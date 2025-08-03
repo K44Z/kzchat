@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
-	repository "github.com/K44Z/kzchat/internal/server/database/generated"
+	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateJWTtoken(user repository.User) (string, error) {
+func GenerateJWTtoken(user schemas.User) (string, error) {
 	JWT_SECRET := os.Getenv("JWT_SECRECT")
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":      user.ID,
@@ -24,7 +24,7 @@ func GenerateJWTtoken(user repository.User) (string, error) {
 	return tokenString, nil
 }
 
-func Authenticate(tokenString string) (repository.User, error) {
+func Authenticate(tokenString string) (*schemas.User, error) {
 	JWT_SECRET := os.Getenv("JWT_SECRECT")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -34,18 +34,18 @@ func Authenticate(tokenString string) (repository.User, error) {
 	})
 
 	if err != nil || !token.Valid {
-		return repository.User{}, fmt.Errorf("invalid token: %w", err)
+		return nil, fmt.Errorf("invalid token: %w", err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return repository.User{}, fmt.Errorf("invalid token claims")
+		return nil, fmt.Errorf("invalid token claims")
 	}
 
-	user := repository.User{
+	user := schemas.User{
 		ID:       int32(claims["sub"].(float64)),
 		Username: claims["username"].(string),
 	}
 
-	return user, nil
+	return &user, nil
 }
