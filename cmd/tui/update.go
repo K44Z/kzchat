@@ -8,8 +8,10 @@ import (
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/K44Z/kzchat/pkg/screens"
+	s "github.com/K44Z/kzchat/pkg/screens"
 
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -150,6 +152,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.currentScreen == screens.ChatScreen {
 			m.chat = screens.NewChatModel(m.width, m.height)
 			cmd := m.chat.Init()
+			m.SetList()
 			m.FocusArea = 2
 			return m, cmd
 		}
@@ -207,7 +210,7 @@ func (m *model) handleRecipientSelection(r schemas.User) (tea.Cmd, error) {
 	}
 	chat := schemas.Chat{
 		Name: fmt.Sprint(api.Config.Username, " - ", r.Username),
-		ID:   id,
+		ID:   *id,
 	}
 	m.chat.Chat = chat
 	m.chat.Recipient.Username = r.Username
@@ -215,4 +218,30 @@ func (m *model) handleRecipientSelection(r schemas.User) (tea.Cmd, error) {
 	m.chat.Current = users[0]
 	m.chat.Recipient = users[1]
 	return cmd, nil
+}
+
+func (m *model) SetList() {
+	width, height := m.width, m.height
+	if width == 0 {
+		width = 20
+	}
+	if height == 0 {
+		height = 30
+	}
+	items, err := api.GetUsers()
+	if err != nil {
+		m.chat.Err = "Error fetching the list of users"
+	}
+	userList := list.New(items, s.UserDelegate{}, m.width, m.height)
+	userList.Title = "Users"
+	userList.SetShowTitle(true)
+	userList.SetShowFilter(true)
+	userList.SetFilteringEnabled(true)
+	userList.SetShowHelp(true)
+	userList.SetShowStatusBar(true)
+	defaultStyles := list.DefaultStyles()
+	userList.Styles.Title = defaultStyles.Title
+	userList.Styles.FilterCursor = defaultStyles.FilterCursor
+	userList.Styles.FilterPrompt = defaultStyles.FilterPrompt
+	m.List = userList
 }

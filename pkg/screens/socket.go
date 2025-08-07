@@ -2,7 +2,6 @@ package screens
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -22,6 +21,15 @@ const (
 )
 
 var Messages = make(chan tea.Msg)
+
+type FetchMessagesResponse struct {
+	Status string              `json:"status"`
+	Data   MessagesReponseData `json:"data"`
+}
+
+type MessagesReponseData struct {
+	Messages []schemas.Message `json:"messages"`
+}
 
 func (m *ChatModel) ConnectToWs() tea.Cmd {
 	return func() tea.Msg {
@@ -53,6 +61,7 @@ func (m *ChatModel) FetchMessages() tea.Cmd {
 			return api.ErrMsg(err)
 		}
 		req.Header.Add("Authorization", "Bearer "+api.Config.Token)
+		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
 			return api.ErrMsg(err)
@@ -61,16 +70,11 @@ func (m *ChatModel) FetchMessages() tea.Cmd {
 		if resp.StatusCode != http.StatusOK {
 			return api.ErrMsg(err)
 		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
+		var apiResp FetchMessagesResponse
+		if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
 			return api.ErrMsg(err)
 		}
-		var messages []schemas.Message
-		if err := json.Unmarshal(body, &messages); err != nil {
-			return api.ErrMsg(err)
-		}
-		m.Messages = messages
-		return api.ChatFetchedMsg{Messages: messages}
+		return api.ChatFetchedMsg{Messages: apiResp.Data.Messages}
 	}
 }
 

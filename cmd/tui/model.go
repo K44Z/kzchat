@@ -40,32 +40,6 @@ func NewModel() model {
 	command.Prompt = ""
 	m.command = command
 
-	width, height := m.width, m.height
-	if width == 0 {
-		width = 20
-	}
-	if height == 0 {
-		height = 30
-	}
-
-	items, err := api.GetUsers()
-	if err != nil {
-		helpers.Logger.Printf("Error fetching users: %v", err)
-	}
-
-	userList := list.New(items, s.UserDelegate{}, width, height)
-	userList.Title = "Users"
-	userList.SetShowTitle(true)
-	userList.SetShowFilter(true)
-	userList.SetFilteringEnabled(true)
-	userList.SetShowHelp(true)
-	userList.SetShowStatusBar(true)
-	defaultStyles := list.DefaultStyles()
-	userList.Styles.Title = defaultStyles.Title
-	userList.Styles.FilterCursor = defaultStyles.FilterCursor
-	userList.Styles.FilterPrompt = defaultStyles.FilterPrompt
-	m.List = userList
-
 	if api.Config.Token == "" || err != nil || !api.IsTokenValid(api.Config.Token) {
 		helpers.Logger.Println(err)
 		m.currentScreen = s.LoginScreen

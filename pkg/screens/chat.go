@@ -185,13 +185,23 @@ func (m *ChatModel) HandleChatCommand() tea.Cmd {
 	args := parts[1:]
 	if handler, ok := CommandRegistry[name]; ok {
 		output, cmd = handler(CommandContext{Model: m}, args)
-		if output != "" {
+		if output != "" && cmd == nil {
 			return func() tea.Msg {
 				return api.ErrMsg(fmt.Errorf("%s", output))
 			}
+		} else if output != "" && cmd != nil {
+			displayOutput := output
+			originalCmd := cmd
+			return tea.Batch(
+				func() tea.Msg {
+					return api.ErrMsg(fmt.Errorf("%s", displayOutput))
+				},
+				originalCmd,
+			)
 		}
 	} else {
 		m.Err = "Unknown command: " + name
+		return nil
 	}
 	return cmd
 }

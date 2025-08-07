@@ -22,15 +22,26 @@ import (
 var BASE_URL string
 var WS_URL string
 
+type ApiResponse struct {
+	Status  string                 `json:"status"`
+	Message string                 `json:"message,omitempty"`
+	Data    map[string]interface{} `json:"data,omitempty"`
+}
+
+type GetChatResponse struct {
+	Status string   `json:"status"`
+	Data   ChatData `json:"data"`
+}
+
+type ChatData struct {
+	ChatId int32          `json:"chatId"`
+	Users  []schemas.User `json:"users"`
+}
+
 type Claims struct {
 	Username string `json:"username"`
 	Sub      string `json:"sub"`
 	jwt.RegisteredClaims
-}
-
-type GetChatResponse struct {
-	ChatId int32          `json:"chatId"`
-	Users  []schemas.User `json:"users"`
 }
 
 type CreateChatResponse struct {
@@ -122,47 +133,41 @@ func IsTokenValid(tokenString string) bool {
 	return claims.ExpiresAt.After(time.Now())
 }
 
-func GetChat(m []string) (int32, []schemas.User, error) {
+func GetChat(m []string) (*int32, []schemas.User, error) {
 	client := &http.Client{}
 	jsonData, err := json.Marshal(map[string]any{
 		"members": m,
 	})
 	if err != nil {
-		return 0, nil, fmt.Errorf("error marshaling data: %w", err)
+		return nil, nil, fmt.Errorf("error marshaling data: %w", err)
 	}
 	url := fmt.Sprintf("%s/messages/chat", BASE_URL)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return 0, nil, fmt.Errorf("error creating request: %w", err)
+		return nil, nil, fmt.Errorf("error creating request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+Config.Token)
 	resp, err := client.Do(req)
 	if err != nil {
-		return 0, nil, fmt.Errorf("error sending request: %w", err)
+		return nil, nil, fmt.Errorf("error sending request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode == http.StatusNotFound {
-			return 0, nil, &NotFoundErr{
+			return nil, nil, &NotFoundErr{
 				Msg: `no previous chat was found, use dm <username> <"message">`,
 			}
 		}
-		return 0, nil, fmt.Errorf("unexpected status code %d ", resp.StatusCode)
+		return nil, nil, fmt.Errorf("unexpected status code %d ", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, nil, fmt.Errorf("error reading response: %w", err)
+	var apiResp GetChatResponse
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return nil, nil, err
 	}
-
-	var result GetChatResponse
-	if err := json.Unmarshal(body, &result); err != nil {
-		return 0, nil, fmt.Errorf("error unmarshaling response: %w", err)
-	}
-
-	return result.ChatId, result.Users, nil
+	return &apiResp.Data.ChatId, apiResp.Data.Users, nil
 }
 
 func CreateChat(message schemas.Message) (schemas.Chat, error) {

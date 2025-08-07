@@ -63,7 +63,7 @@ func LoginHanlder(s *services.Services) fiber.Handler {
 		}
 		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password)); err != nil {
 			log.Println(err)
-			return http.Error(c, fiber.ErrUnauthorized.Code, fiber.ErrUnauthorized.Error())
+			return http.Error(c, fiber.ErrUnauthorized.Code, "Invalid credentials")
 		}
 		token, err := helpers.GenerateJWTtoken(schemas.User{
 			Username: user.Username,

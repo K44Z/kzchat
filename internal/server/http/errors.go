@@ -1,6 +1,10 @@
 package http
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"strconv"
+
+	"github.com/gofiber/fiber/v2"
+)
 
 type APIResponse struct {
 	Status  string                 `json:"status"`
@@ -24,7 +28,7 @@ func Created(c *fiber.Ctx, data map[string]interface{}) error {
 
 func Error(c *fiber.Ctx, status int, msg string) error {
 	return c.Status(status).JSON(APIResponse{
-		Status:  "error",
+		Status:  strconv.Itoa(status),
 		Message: msg,
 	})
 }

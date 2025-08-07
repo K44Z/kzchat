@@ -70,27 +70,27 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 					m.err = "Error sending request: " + err.Error()
 					return m, nil
 				}
-
 				defer resp.Body.Close()
-				var response map[string]string
+				var apiResp api.ApiResponse
+				if err = json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+					m.err = "error parsing response"
+					return m, nil
+				}
 				if resp.StatusCode == 200 {
-					if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-						m.err = err.Error()
-					} else {
-						config := schemas.Config{Token: response["token"], Username: username}
+					token, ok := apiResp.Data["token"].(string)
+					if ok {
+						config := schemas.Config{Token: token, Username: username}
 						api.SaveConfig(config)
+					} else {
+						m.err = "error saving token locally"
 					}
 					return m, func() tea.Msg {
 						return api.ScreenMsg(ChatScreen)
 					}
 				} else {
-					if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-						m.err = err.Error()
-					} else {
-						m.focusIndex = 0
-						m.handleFocus()
-						m.err = response["message"]
-					}
+					m.focusIndex = 0
+					m.handleFocus()
+					m.err = apiResp.Message
 				}
 			} else {
 				m.err = "All Fields are required"

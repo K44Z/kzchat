@@ -22,7 +22,7 @@ func GetDmsByrecipientUsernameHandler(s *services.Services) fiber.Handler {
 		if username == "" {
 			return http.Error(c, fiber.ErrBadRequest.Code, "Username is required")
 		}
-		currentUser := c.Locals("user").(schemas.User)
+		currentUser := c.Locals("user").(*schemas.User)
 
 		rec, err := s.UserService.GetUserByUsername(c.Context(), username)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -30,7 +30,7 @@ func GetDmsByrecipientUsernameHandler(s *services.Services) fiber.Handler {
 		} else if err != nil {
 			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
-		messages, err := s.ChatService.GetMessagesByParticipants(c.Context(), currentUser, *rec)
+		messages, err := s.ChatService.GetMessagesByParticipants(c.Context(), *currentUser, *rec)
 		if err != nil {
 			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
@@ -70,6 +70,7 @@ func GetChatByParticipantsHandler(s *services.Services) fiber.Handler {
 		if err != nil {
 			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
+
 		return http.Success(c, fiber.Map{
 			"chatId": *chatId,
 			"users":  users,

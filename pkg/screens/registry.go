@@ -44,7 +44,7 @@ var CommandRegistry = map[string]CommandFunc{
 		tempRecipient := ctx.Model.Recipient
 		tempInput := ctx.Model.Textarea.Value()
 		var (
-			chatID int32
+			chatID *int32
 			chat   schemas.Chat
 		)
 
@@ -71,7 +71,7 @@ var CommandRegistry = map[string]CommandFunc{
 				return err.Error(), nil
 			}
 		} else {
-			ctx.Model.Chat.ID = chatID
+			ctx.Model.Chat.ID = *chatID
 			ctx.Model.Recipient = users[1]
 		}
 
@@ -87,18 +87,18 @@ var CommandRegistry = map[string]CommandFunc{
 			return "Usage: open <username>", nil
 		}
 		id, users, err := api.GetChat([]string{api.Config.Username, args[0]})
-		if users == nil || err != nil {
-			return err.Error(), nil
+		if id == nil || users == nil || err != nil {
+			return fmt.Sprintf("Error opening chat: %v", err), nil
 		}
 		chat := schemas.Chat{
 			Name: fmt.Sprint(api.Config.Username, " - ", args[0]),
-			ID:   id,
+			ID:   *id,
 		}
 		ctx.Model.Chat = chat
-		ctx.Model.Recipient.Username = args[0]
-		cmd := ctx.Model.FetchMessages()
 		ctx.Model.Current = users[0]
 		ctx.Model.Recipient = users[1]
-		return "", cmd
+
+		// Return empty string with the command to ensure the command gets executed
+		return "", ctx.Model.FetchMessages()
 	},
 }

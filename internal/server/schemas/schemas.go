@@ -42,8 +42,8 @@ type GetChatIdByParticipants struct {
 }
 
 type User struct {
-	ID       int32
-	Username string
+	ID       int32  `json:"id"`
+	Username string `json:"username"`
 }
 
 type InternalUser struct {
