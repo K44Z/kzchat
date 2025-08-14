@@ -61,6 +61,14 @@ func (u User) FilterValue() string {
 	return u.Username
 }
 
+func (u User) Title() string {
+	return u.Username
+}
+
+func (u User) Description() string {
+	return ""
+}
+
 type ChatMember struct {
 	ChatId int32 `json:"chatId" validate:"required"`
 	UserId int32 `json:"userId" validate:"required"`

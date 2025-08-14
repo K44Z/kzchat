@@ -50,24 +50,20 @@ func (q *Queries) CreateChatMembers(ctx context.Context, arg CreateChatMembersPa
 }
 
 const findChatByParticipants = `-- name: FindChatByParticipants :one
-SELECT chat_id
-FROM chat_members
-WHERE user_id = ANY($1::int[])
-GROUP BY chat_id
-HAVING COUNT(*) = $2
+SELECT cm.chat_id
+FROM chat_members cm
+WHERE cm.user_id = ANY($1::int[])
+GROUP BY cm.chat_id
+HAVING COUNT(*) = 2
    AND COUNT(*) = (
-       SELECT COUNT(*) FROM chat_members cm2
-       WHERE cm2.chat_id = chat_members.chat_id
+       SELECT COUNT(*)
+       FROM chat_members cm2
+       WHERE cm2.chat_id = cm.chat_id
    )
 `
 
-type FindChatByParticipantsParams struct {
-	Column1 []int32
-	Column2 interface{}
-}
-
-func (q *Queries) FindChatByParticipants(ctx context.Context, arg FindChatByParticipantsParams) (int32, error) {
-	row := q.db.QueryRow(ctx, findChatByParticipants, arg.Column1, arg.Column2)
+func (q *Queries) FindChatByParticipants(ctx context.Context, dollar_1 []int32) (int32, error) {
+	row := q.db.QueryRow(ctx, findChatByParticipants, dollar_1)
 	var chat_id int32
 	err := row.Scan(&chat_id)
 	return chat_id, err
@@ -125,16 +121,34 @@ func (q *Queries) GetChatMessagesByChatId(ctx context.Context, chatID int32) ([]
 }
 
 const getDmChatMessagesByParticipants = `-- name: GetDmChatMessagesByParticipants :many
-SELECT m.id, m.sender_id, m.content, m.chat_id, m.time, m.type
+SELECT
+    m.id,
+    m.content,
+    m.chat_id,
+    m.time,
+    m.type,
+    u_sender.id AS sender_id,
+    u_sender.username AS sender_username,
+    u_receiver.id AS receiver_id,
+    u_receiver.username AS receiver_username
 FROM messages m
-JOIN chats c ON m.chat_id = c.id
+JOIN chats c
+    ON m.chat_id = c.id
+JOIN users u_sender
+    ON m.sender_id = u_sender.id
+JOIN chat_members cm_receiver
+    ON cm_receiver.chat_id = m.chat_id
+    AND cm_receiver.user_id != m.sender_id
+JOIN users u_receiver
+    ON cm_receiver.user_id = u_receiver.id
 WHERE c.type = 'dm'
-  AND m.chat_id IN (
-    SELECT chat_id
-    FROM chat_members
-    WHERE user_id = $1 OR user_id = $2
-    GROUP BY chat_id
-    HAVING COUNT(DISTINCT user_id) = 2
+  AND m.chat_id = (
+      SELECT cm1.chat_id
+      FROM chat_members cm1
+      WHERE cm1.user_id IN ($1, $2)
+      GROUP BY cm1.chat_id
+      HAVING COUNT(DISTINCT cm1.user_id) = 2
+         AND COUNT(*) = 2
   )
 ORDER BY m.time ASC
 `
@@ -144,22 +158,37 @@ type GetDmChatMessagesByParticipantsParams struct {
 	UserID_2 int32
 }
 
-func (q *Queries) GetDmChatMessagesByParticipants(ctx context.Context, arg GetDmChatMessagesByParticipantsParams) ([]Message, error) {
+type GetDmChatMessagesByParticipantsRow struct {
+	ID               int32
+	Content          string
+	ChatID           int32
+	Time             pgtype.Timestamp
+	Type             string
+	SenderID         int32
+	SenderUsername   string
+	ReceiverID       int32
+	ReceiverUsername string
+}
+
+func (q *Queries) GetDmChatMessagesByParticipants(ctx context.Context, arg GetDmChatMessagesByParticipantsParams) ([]GetDmChatMessagesByParticipantsRow, error) {
 	rows, err := q.db.Query(ctx, getDmChatMessagesByParticipants, arg.UserID, arg.UserID_2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Message
+	var items []GetDmChatMessagesByParticipantsRow
 	for rows.Next() {
-		var i Message
+		var i GetDmChatMessagesByParticipantsRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.SenderID,
 			&i.Content,
 			&i.ChatID,
 			&i.Time,
 			&i.Type,
+			&i.SenderID,
+			&i.SenderUsername,
+			&i.ReceiverID,
+			&i.ReceiverUsername,
 		); err != nil {
 			return nil, err
 		}

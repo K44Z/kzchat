@@ -17,7 +17,7 @@ type ChatService interface {
 	GetChatById(ctx context.Context, id int32) (*schemas.Chat, error)
 	GetMessagesByParticipants(ctx context.Context, current, rec schemas.User) ([]schemas.Message, error)
 	CreateDM(ctx context.Context, m schemas.Message) error
-	GetChatIdByParticipants(ctx context.Context, arg sqlc.FindChatByParticipantsParams) (*int32, error)
+	GetChatIdByParticipants(ctx context.Context, arg []int32) (*int32, error)
 }
 
 type chatService struct {
@@ -25,9 +25,10 @@ type chatService struct {
 	userService UserService
 }
 
-func NewChatService(c repository.ChatRepository) ChatService {
+func NewChatService(c repository.ChatRepository, userService UserService) ChatService {
 	return &chatService{
-		chatRepo: c,
+		chatRepo:    c,
+		userService: userService,
 	}
 }
 
@@ -112,7 +113,7 @@ func (c *chatService) CreateDM(ctx context.Context, m schemas.Message) error {
 	return nil
 }
 
-func (s *chatService) GetChatIdByParticipants(ctx context.Context, arg sqlc.FindChatByParticipantsParams) (id *int32, err error) {
+func (s *chatService) GetChatIdByParticipants(ctx context.Context, arg []int32) (id *int32, err error) {
 	defer wrap(err, "")
 	return s.chatRepo.FindByParticipants(ctx, arg)
 }

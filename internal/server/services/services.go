@@ -13,9 +13,10 @@ type Services struct {
 }
 
 func NewService(db *database.DB) *Services {
+	userService := NewUserService(repository.NewUserRepository(db))
 	return &Services{
-		UserService: NewUserService(repository.NewUserRepository(db)),
-		ChatService: NewChatService(repository.NewChatRepository(db)),
+		UserService: userService,
+		ChatService: NewChatService(repository.NewChatRepository(db), userService),
 	}
 }
 

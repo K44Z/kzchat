@@ -67,10 +67,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			}
 		case "i":
-			if m.FocusArea == 1 {
-				m.FocusArea = 2
-				m.chat.Textarea.Focus()
-				return m, nil
+			if m.currentScreen == s.ChatScreen {
+				if m.FocusArea == 1 {
+					m.FocusArea = 2
+					m.chat.Textarea.Focus()
+					return m, nil
+				}
 			}
 		case "esc":
 			var cmd tea.Cmd
@@ -91,6 +93,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.FocusArea = 1
 			return m, cmd
+		case "/":
+			if m.FocusArea == 4 {
+				m.List.FilterInput.Focus()
+				return m, nil
+			}
 		case "enter":
 			switch m.FocusArea {
 			case 3:
@@ -118,7 +125,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.FocusArea = 1
 				return m, cmd
 			}
-		case "/":
+		case "ctrl+s":
 			m.FocusArea = 4
 		}
 
@@ -232,16 +239,11 @@ func (m *model) SetList() {
 	if err != nil {
 		m.chat.Err = "Error fetching the list of users"
 	}
-	userList := list.New(items, s.UserDelegate{}, m.width, m.height)
+
+	delegate := list.NewDefaultDelegate()
+
+	userList := list.New(items, delegate, width, height)
 	userList.Title = "Users"
-	userList.SetShowTitle(true)
-	userList.SetShowFilter(true)
-	userList.SetFilteringEnabled(true)
-	userList.SetShowHelp(true)
-	userList.SetShowStatusBar(true)
-	defaultStyles := list.DefaultStyles()
-	userList.Styles.Title = defaultStyles.Title
-	userList.Styles.FilterCursor = defaultStyles.FilterCursor
-	userList.Styles.FilterPrompt = defaultStyles.FilterPrompt
+
 	m.List = userList
 }

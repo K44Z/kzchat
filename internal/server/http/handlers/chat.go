@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	sqlc "github.com/K44Z/kzchat/internal/server/database/generated"
 	"github.com/K44Z/kzchat/internal/server/http"
 
 	"github.com/K44Z/kzchat/internal/server/schemas"
@@ -59,18 +58,14 @@ func GetChatByParticipantsHandler(s *services.Services) fiber.Handler {
 				ID:       user.ID,
 			})
 		}
-		chatId, err := s.ChatService.GetChatIdByParticipants(c.Context(), sqlc.FindChatByParticipantsParams{
-			Column1: []int32{users[0].ID, users[1].ID},
-			Column2: 2,
-		})
-		if *chatId == 0 {
+		chatId, err := s.ChatService.GetChatIdByParticipants(c.Context(), []int32{users[0].ID, users[1].ID})
+		if chatId == nil {
 			log.Printf("Chat not found")
 			return http.Error(c, fiber.ErrNotFound.Code, "Chat not found")
 		}
 		if err != nil {
 			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
-
 		return http.Success(c, fiber.Map{
 			"chatId": *chatId,
 			"users":  users,

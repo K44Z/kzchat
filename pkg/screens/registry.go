@@ -71,8 +71,9 @@ var CommandRegistry = map[string]CommandFunc{
 				return err.Error(), nil
 			}
 		} else {
-			ctx.Model.Chat.ID = *chatID
+			ctx.Model.Current = users[0]
 			ctx.Model.Recipient = users[1]
+			ctx.Model.Chat.ID = *chatID
 		}
 
 		ctx.Model.Textarea.SetValue(message)

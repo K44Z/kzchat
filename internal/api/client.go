@@ -38,6 +38,15 @@ type ChatData struct {
 	Users  []schemas.User `json:"users"`
 }
 
+type FetchedUsersReponse struct {
+	Status string          `json:"status"`
+	Data   UserListReponse `json:"data"`
+}
+
+type UserListReponse struct {
+	Users []schemas.User `json:"users"`
+}
+
 type Claims struct {
 	Username string `json:"username"`
 	Sub      string `json:"sub"`
@@ -50,10 +59,6 @@ type CreateChatResponse struct {
 
 type NotFoundErr struct {
 	Msg string
-}
-
-type UserListReponse struct {
-	Users []schemas.User `json:"users"`
 }
 
 type ErrMsg error
@@ -224,18 +229,19 @@ func GetUsers() ([]list.Item, error) {
 	if response.StatusCode != http.StatusOK {
 		return nil, err
 	}
-	var userList UserListReponse
-	body, err := io.ReadAll(response.Body)
-	err = json.Unmarshal(body, &userList)
+	defer response.Body.Close()
+	var res FetchedUsersReponse
+	err = json.NewDecoder(response.Body).Decode(&res)
 	if err != nil {
 		return nil, err
 	}
-	var result []list.Item
-	for _, v := range userList.Users {
-		result = append(result, schemas.User{
+
+	var list []list.Item
+	for _, v := range res.Data.Users {
+		list = append(list, schemas.User{
 			Username: v.Username,
 			ID:       v.ID,
 		})
 	}
-	return result, nil
+	return list, nil
 }

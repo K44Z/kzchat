@@ -17,7 +17,7 @@ import (
 type ChatRepository interface {
 	Create(ctx context.Context, arg sqlc.CreateChatParams, users []schemas.User, name string) (*schemas.Chat, error)
 	CreateMembers(ctx context.Context, arg sqlc.CreateChatMembersParams) error
-	FindByParticipants(ctx context.Context, arg sqlc.FindChatByParticipantsParams) (*int32, error)
+	FindByParticipants(ctx context.Context, arg []int32) (*int32, error)
 	GetById(ctx context.Context, id int32) (*schemas.Chat, error)
 	GetMessagesByChatId(ctx context.Context, id int32) ([]schemas.Message, error)
 	GetMessagesByParticipants(ctx context.Context, arg sqlc.GetDmChatMessagesByParticipantsParams) ([]schemas.Message, error)
@@ -85,7 +85,7 @@ func (c *chatRepository) CreateMembers(ctx context.Context, arg sqlc.CreateChatM
 	return nil
 }
 
-func (c *chatRepository) FindByParticipants(ctx context.Context, arg sqlc.FindChatByParticipantsParams) (*int32, error) {
+func (c *chatRepository) FindByParticipants(ctx context.Context, arg []int32) (*int32, error) {
 	id, err := c.queries.FindChatByParticipants(ctx, arg)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fiber.ErrNotFound
@@ -136,12 +136,18 @@ func (c *chatRepository) GetMessagesByParticipants(ctx context.Context, arg sqlc
 	var messages []schemas.Message
 	for _, message := range res {
 		sender := schemas.User{
-			ID: message.SenderID,
+			ID:       message.SenderID,
+			Username: message.SenderUsername,
+		}
+		receiver := schemas.User{
+			ID:       message.ReceiverID,
+			Username: message.ReceiverUsername,
 		}
 		messages = append(messages, schemas.Message{
-			Content: message.Content,
-			Time:    message.Time.Time,
-			Sender:  sender,
+			Content:  message.Content,
+			Time:     message.Time.Time,
+			Sender:   sender,
+			Receiver: receiver,
 		})
 	}
 	return messages, nil

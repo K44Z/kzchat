@@ -384,12 +384,6 @@ func (m *ChatModel) renderRightSidebar() string {
 	content.WriteString(headerStyle.Render("USER INFO"))
 	content.WriteString("\n\n")
 	content.WriteString(fmt.Sprintf("Name: %s\n", m.Current.Username))
-	content.WriteString("Status: Online\n\n\n")
-	content.WriteString(headerStyle.Render("SERVER"))
-	content.WriteString("\n\n")
-	content.WriteString("Connected\n")
-	content.WriteString("Latency: 25ms\n")
-
 	return content.String()
 }
 
@@ -405,13 +399,14 @@ Controls:
   - Press [i]               → Enter input mode
   - Press [:]               → Open command bar
   - Press [esc]             → Exit current input mode
+  - Press [/]               → Browse users
   - Press [Ctrl+z]          → Quit the app
 `
 
 	renderWidth := min(width, 100)
 	content := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("#8839ef")).
+		Foreground(lipgloss.Color("#ffffff")).
 		Width(renderWidth).
 		Render(guideText)
 
