@@ -34,14 +34,15 @@ func Init() tea.Cmd {
 
 func NewModel() model {
 	var m model
-	api.ReadConfig()
 	command := textinput.New()
 	command.CharLimit = 256
 	command.Prompt = ""
 	m.command = command
 
-	if api.Config.Token == "" || err != nil || !api.IsTokenValid(api.Config.Token) {
-		helpers.Logger.Println(err)
+	configErr := api.ReadConfig()
+
+	if api.Config.Token == "" || configErr != nil || !api.IsTokenValid(api.Config.Token) {
+		helpers.Logger.Println("Invalid or missing token, showing login screen")
 		m.currentScreen = s.LoginScreen
 		m.login = s.NewLoginModel()
 		m.signup = s.NewSignupModel()

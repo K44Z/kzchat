@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -83,6 +82,8 @@ func (e *NotFoundErr) Error() string {
 var Config schemas.Config
 
 func SaveConfig(config schemas.Config) error {
+	Config.Token = config.Token
+	Config.Username = config.Username
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -119,22 +120,17 @@ func ReadConfig() error {
 }
 
 func IsTokenValid(tokenString string) bool {
-	secret := os.Getenv("JWT_SECRET")
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected singing method")
-		}
-		return []byte(secret), nil
-	})
+	token, _, err := jwt.NewParser().ParseUnverified(tokenString, &Claims{})
 	if err != nil {
 		return false
 	}
 
 	claims, ok := token.Claims.(*Claims)
-	if !ok || !token.Valid {
+	if !ok {
 		return false
 	}
 
+	// Only check if token is not expired - let server validate signature
 	return claims.ExpiresAt.After(time.Now())
 }
 

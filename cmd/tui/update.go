@@ -112,7 +112,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.chat.Textarea.Focus()
 				return m, cmd
 			case 2:
-				m.chat.SendMessage()
+				m.chat.SendMessage(m.chat.Recipient)
 				m.chat.Textarea.Reset()
 				m.chat.Textarea.Focus()
 			case 4:

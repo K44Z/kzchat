@@ -77,7 +77,7 @@ var CommandRegistry = map[string]CommandFunc{
 		}
 
 		ctx.Model.Textarea.SetValue(message)
-		ctx.Model.SendMessage()
+		ctx.Model.SendMessage(tempRecipient)
 		ctx.Model.Recipient = tempRecipient
 		ctx.Model.Textarea.SetValue(tempInput)
 

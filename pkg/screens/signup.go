@@ -93,7 +93,7 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 					m.err = "Error preparing request: " + err.Error()
 					return m, nil
 				}
-				url := fmt.Sprintf("%s/auth/login", api.BASE_URL)
+				url := fmt.Sprintf("%s/auth/register", api.BASE_URL)
 				resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 				if err != nil {
 					m.err = "Error sending request: " + err.Error()
@@ -101,7 +101,7 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 				}
 
 				defer resp.Body.Close()
-				if resp.StatusCode == 201 {
+				if resp.StatusCode == 200 {
 					return m, func() tea.Msg {
 						return api.ScreenMsg(LoginScreen)
 					}

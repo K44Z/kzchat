@@ -11,7 +11,7 @@ import (
 )
 
 func GenerateJWTtoken(user schemas.User) (string, error) {
-	JWT_SECRET := os.Getenv("JWT_SECRECT")
+	JWT_SECRET := os.Getenv("JWT_SECRET")
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":      user.ID,
 		"username": user.Username,
@@ -19,13 +19,13 @@ func GenerateJWTtoken(user schemas.User) (string, error) {
 	})
 	tokenString, err := token.SignedString([]byte(JWT_SECRET))
 	if err != nil {
-		return err.Error(), err
+		return "", err
 	}
 	return tokenString, nil
 }
 
 func Authenticate(tokenString string) (*schemas.User, error) {
-	JWT_SECRET := os.Getenv("JWT_SECRECT")
+	JWT_SECRET := os.Getenv("JWT_SECRET")
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -42,9 +42,26 @@ func Authenticate(tokenString string) (*schemas.User, error) {
 		return nil, fmt.Errorf("invalid token claims")
 	}
 
+	sub, ok := claims["sub"]
+	if !ok {
+		return nil, fmt.Errorf("missing sub claim")
+	}
+	username, ok := claims["username"]
+	if !ok {
+		return nil, fmt.Errorf("missing username claim")
+	}
+	subFloat, ok := sub.(float64)
+	if !ok {
+		return nil, fmt.Errorf("invalid sub claim type")
+	}
+	usernameStr, ok := username.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid username claim type")
+	}
+
 	user := schemas.User{
-		ID:       int32(claims["sub"].(float64)),
-		Username: claims["username"].(string),
+		ID:       int32(subFloat),
+		Username: usernameStr,
 	}
 
 	return &user, nil

@@ -389,7 +389,7 @@ func (m *ChatModel) renderRightSidebar() string {
 
 func (m *ChatModel) renderGuide(width int) string {
 	guideText := `
-Welcome to kzchat. This chat app lets you talk to users in a clean, minimal interface.
+Welcome to kzchat.
 
 Available commands:
   - open <username>         → Open chat with a user
