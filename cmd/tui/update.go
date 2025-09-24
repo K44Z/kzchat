@@ -8,7 +8,6 @@ import (
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/K44Z/kzchat/pkg/screens"
-	s "github.com/K44Z/kzchat/pkg/screens"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -35,6 +34,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 			m.chat, cmd = m.chat.Update(msg, int(m.FocusArea))
 			cmds = append(cmds, cmd)
+			// m.UpdateListHeight()
 		case screens.LoginScreen:
 			if m.login != nil {
 				var cmd tea.Cmd
@@ -67,7 +67,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			}
 		case "i":
-			if m.currentScreen == s.ChatScreen {
+			if m.currentScreen == screens.ChatScreen {
 				if m.FocusArea == 1 {
 					m.FocusArea = 2
 					m.chat.Textarea.Focus()
@@ -90,14 +90,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.chat, cmd = m.chat.Update(msg, 1)
 					return m, cmd
 				}
+				m.List.FilterInput.Reset()
 			}
 			m.FocusArea = 1
 			return m, cmd
-		case "/":
-			if m.FocusArea == 4 {
-				m.List.FilterInput.Focus()
-				return m, nil
-			}
+		// case "/":
+		// 	if m.FocusArea == 4 {
+		// 		m.List.FilterInput.Focus()
+		// 		return m, nil
+		// 	}
 		case "enter":
 			switch m.FocusArea {
 			case 3:
@@ -127,6 +128,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "ctrl+s":
 			m.FocusArea = 4
+			m.List.ResetFilter()
+			m.List.FilterInput.Blur()
 		}
 
 		switch m.FocusArea {
@@ -228,22 +231,25 @@ func (m *model) handleRecipientSelection(r schemas.User) (tea.Cmd, error) {
 }
 
 func (m *model) SetList() {
-	width, height := m.width, m.height
-	if width == 0 {
-		width = 20
-	}
-	if height == 0 {
-		height = 30
-	}
+	width, height := m.width-3, m.height-15
 	items, err := api.GetUsers()
 	if err != nil {
 		m.chat.Err = "Error fetching the list of users"
 	}
 
 	delegate := list.NewDefaultDelegate()
-
+	delegate.ShowDescription = false
+	delegate.SetHeight(1)
 	userList := list.New(items, delegate, width, height)
+	userList.SetFilteringEnabled(true)
+	userList.SetShowFilter(true)
+	userList.SetShowPagination(true)
+	userList.SetShowTitle(true)
 	userList.Title = "Users"
 
 	m.List = userList
+}
+
+func (m *model) UpdateListHeight() {
+	m.List.SetHeight(m.height)
 }

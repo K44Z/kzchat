@@ -22,9 +22,9 @@ var BASE_URL string
 var WS_URL string
 
 type ApiResponse struct {
-	Status  string                 `json:"status"`
-	Message string                 `json:"message,omitempty"`
-	Data    map[string]interface{} `json:"data,omitempty"`
+	Status  string         `json:"status"`
+	Message string         `json:"message,omitempty"`
+	Data    map[string]any `json:"data,omitempty"`
 }
 
 type GetChatResponse struct {

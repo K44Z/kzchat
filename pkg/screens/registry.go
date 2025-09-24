@@ -36,6 +36,9 @@ var CommandRegistry = map[string]CommandFunc{
 		}
 
 		recipient := args[0]
+		if recipient == ctx.Model.Current.Username {
+			return `Cannot send a message to yourself :)`, nil
+		}
 		message := strings.Join(args[1:], " ")
 		if message == "" {
 			return "Message cannot be empty", nil

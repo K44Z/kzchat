@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/K44Z/kzchat/internal/server/http"
+	"github.com/K44Z/kzchat/internal/server/schemas"
 	"github.com/K44Z/kzchat/internal/server/services"
 
 	"github.com/gofiber/fiber/v2"
@@ -25,12 +26,13 @@ func SearchForUserByUsernameHandler(s *services.Services) fiber.Handler {
 
 func GetAllUsersHandler(s *services.Services) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		ctx := context.Background()
+		currentUser := c.Locals("user").(*schemas.User)
+		ctx := context.WithValue(context.Background(), "id", currentUser.ID)
 		users, err := s.UserService.GetAllUsersService(ctx)
 		if err != nil {
 			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
-		return http.Success(c, map[string]interface{}{
+		return http.Success(c, map[string]any{
 			"users": users,
 		})
 	}

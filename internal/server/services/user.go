@@ -75,6 +75,9 @@ func (u *userService) GetAllUsersService(ctx context.Context) ([]schemas.User, e
 		return nil, wrap(err, "error getting all users")
 	}
 	for _, user := range users {
+		if user.ID == ctx.Value("id") {
+			continue
+		}
 		result = append(result, schemas.User{
 			ID:       user.ID,
 			Username: user.Username,

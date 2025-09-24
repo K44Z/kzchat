@@ -34,7 +34,6 @@ func NewChatService(c repository.ChatRepository, userService UserService) ChatSe
 
 func (c *chatService) CreateChatFromMessage(ctx context.Context, m schemas.Message, users []schemas.User) (*schemas.Chat, error) {
 	name := fmt.Sprintf("%s - %s ", m.Sender.Username, m.Receiver.Username)
-	fmt.Println(name)
 	chat, err := c.chatRepo.Create(ctx, sqlc.CreateChatParams{
 		Type: "dm",
 		Name: name,
@@ -85,7 +84,6 @@ func (c *chatService) CreateDM(ctx context.Context, m schemas.Message) error {
 		}
 		users = append(users, *user)
 	}
-	fmt.Println("the chat id is :", m.Chat.ID)
 	if m.Chat.ID == 0 {
 		chat, err = c.CreateChatFromMessage(ctx, m, users)
 		if err != nil {
