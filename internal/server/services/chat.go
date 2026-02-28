@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	sqlc "github.com/K44Z/kzchat/internal/server/database/generated"
 	"github.com/K44Z/kzchat/internal/server/repository"
@@ -18,6 +17,7 @@ type ChatService interface {
 	GetMessagesByParticipants(ctx context.Context, current, rec schemas.User) ([]schemas.Message, error)
 	CreateDM(ctx context.Context, m schemas.Message) error
 	GetChatIdByParticipants(ctx context.Context, arg []int32) (*int32, error)
+	CreateChat(ctx context.Context, users []schemas.User, chatType string) (*schemas.Chat, error)
 }
 
 type chatService struct {
@@ -33,11 +33,11 @@ func NewChatService(c repository.ChatRepository, userService UserService) ChatSe
 }
 
 func (c *chatService) CreateChatFromMessage(ctx context.Context, m schemas.Message, users []schemas.User) (*schemas.Chat, error) {
-	name := fmt.Sprintf("%s - %s ", m.Sender.Username, m.Receiver.Username)
+	name := CreateChatName(m.Sender.Username, m.Receiver.Username)
 	chat, err := c.chatRepo.Create(ctx, sqlc.CreateChatParams{
 		Type: "dm",
 		Name: name,
-	}, users, name)
+	}, users)
 	if err != nil {
 		return nil, wrap(err, "")
 	}
@@ -114,4 +114,16 @@ func (c *chatService) CreateDM(ctx context.Context, m schemas.Message) error {
 func (s *chatService) GetChatIdByParticipants(ctx context.Context, arg []int32) (id *int32, err error) {
 	defer wrap(err, "")
 	return s.chatRepo.FindByParticipants(ctx, arg)
+}
+
+func (s *chatService) CreateChat(ctx context.Context, users []schemas.User, chatType string) (*schemas.Chat, error) {
+	name := CreateChatName(users[0].Username, users[1].Username)
+	chat, err := s.chatRepo.Create(ctx, sqlc.CreateChatParams{
+		Type: chatType,
+		Name: name,
+	}, users)
+	if err != nil {
+		return nil, err
+	}
+	return chat, nil
 }

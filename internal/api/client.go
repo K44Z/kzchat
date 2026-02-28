@@ -11,15 +11,17 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/K44Z/kzchat/internal/server/schemas"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/gorilla/websocket"
+
+	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var BASE_URL string
-var WS_URL string
+var (
+	BASE_URL string
+	WS_URL   string
+)
 
 type ApiResponse struct {
 	Status  string         `json:"status"`
@@ -60,21 +62,6 @@ type NotFoundErr struct {
 	Msg string
 }
 
-type ErrMsg error
-
-type WsMsg schemas.Message
-
-type WsConnectedMsg struct {
-	Conn *websocket.Conn
-}
-
-type ChatFetchedMsg struct {
-	Messages []schemas.Message
-}
-
-type Screen int
-type ScreenMsg Screen
-
 func (e *NotFoundErr) Error() string {
 	return fmt.Sprint(e.Msg)
 }
@@ -91,7 +78,7 @@ func SaveConfig(config schemas.Config) error {
 	configDir := filepath.Join(home, "/.config/kzchat")
 
 	if _, err = os.Stat(configDir); os.IsNotExist(err) {
-		if err = os.Mkdir(configDir, 0700); err != nil {
+		if err = os.Mkdir(configDir, 0o700); err != nil {
 			return err
 		}
 	}
@@ -100,7 +87,7 @@ func SaveConfig(config schemas.Config) error {
 		return err
 	}
 	tokenFile := filepath.Join(configDir, "token.json")
-	return ioutil.WriteFile(tokenFile, data, 0600)
+	return ioutil.WriteFile(tokenFile, data, 0o600)
 }
 
 func ReadConfig() error {
@@ -109,7 +96,7 @@ func ReadConfig() error {
 		return err
 	}
 
-	data, err := ioutil.ReadFile(filepath.Join(home, "/.config/kzchat", "token.json"))
+	data, err := os.ReadFile(filepath.Join(home, "/.config/kzchat", "token.json"))
 	if err != nil {
 		return err
 	}
@@ -124,13 +111,10 @@ func IsTokenValid(tokenString string) bool {
 	if err != nil {
 		return false
 	}
-
 	claims, ok := token.Claims.(*Claims)
 	if !ok {
 		return false
 	}
-
-	// Only check if token is not expired - let server validate signature
 	return claims.ExpiresAt.After(time.Now())
 }
 
@@ -220,7 +204,10 @@ func GetUsers() ([]list.Item, error) {
 	req.Header.Add("Authorization", "Bearer "+Config.Token)
 	response, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("unexpected status code :%d", response.StatusCode)
+		if response != nil {
+			return nil, fmt.Errorf("unexpected status code :%d", response.StatusCode)
+		}
+		return nil, fmt.Errorf("error sending request: %w", err)
 	}
 	if response.StatusCode != http.StatusOK {
 		return nil, err
@@ -231,7 +218,6 @@ func GetUsers() ([]list.Item, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var list []list.Item
 	for _, v := range res.Data.Users {
 		list = append(list, schemas.User{

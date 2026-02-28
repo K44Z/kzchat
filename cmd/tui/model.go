@@ -4,7 +4,7 @@ import (
 	s "github.com/K44Z/kzchat/pkg/screens"
 
 	"github.com/K44Z/kzchat/internal/api"
-	"github.com/K44Z/kzchat/internal/helpers"
+	"github.com/K44Z/kzchat/internal/messages"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -23,13 +23,17 @@ const (
 	List
 )
 
-func Init() tea.Cmd {
-	go func() {
-		for msg := range s.Messages {
-			Program.Send(msg)
+func (m *model) Init() tea.Cmd {
+	return func() tea.Msg {
+		configErr := api.ReadConfig()
+		// valid := api.IsTokenValid(api.Config.Token)
+
+		if api.Config.Token == "" || configErr != nil {
+			return messages.ScreenMsg(s.LoginScreen)
 		}
-	}()
-	return nil
+
+		return messages.ScreenMsg(s.ChatScreen)
+	}
 }
 
 func NewModel() model {
@@ -38,19 +42,9 @@ func NewModel() model {
 	command.CharLimit = 256
 	command.Prompt = ""
 	m.command = command
-
-	configErr := api.ReadConfig()
-
-	if api.Config.Token == "" || configErr != nil || !api.IsTokenValid(api.Config.Token) {
-		helpers.Logger.Println("Invalid or missing token, showing login screen")
-		m.currentScreen = s.LoginScreen
-		m.login = s.NewLoginModel()
-		m.signup = s.NewSignupModel()
-	} else {
-		m.currentScreen = s.ChatScreen
-		m.chat = s.NewChatModel(m.width, m.height)
-		m.FocusArea = 1
-	}
+	m.login = s.NewLoginModel()
+	m.signup = s.NewSignupModel()
+	m.FocusArea = 0
 	return m
 }
 
@@ -59,7 +53,7 @@ type model struct {
 	height        int
 	quitting      bool
 	spinner       spinner.Model
-	currentScreen api.Screen
+	currentScreen messages.Screen
 	signup        *s.SignupModel
 	login         *s.LoginModel
 	chat          *s.ChatModel

@@ -1,14 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/joho/godotenv"
+
 	"github.com/K44Z/kzchat/configs"
 	"github.com/K44Z/kzchat/internal/server/http/routes"
 	"github.com/K44Z/kzchat/internal/server/services"
-	"github.com/joho/godotenv"
 
 	"github.com/K44Z/kzchat/internal/server/database"
 
@@ -34,7 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Error connecting to the database", err)
 	}
-	log.Println("Migrations applied")
+	fmt.Println("Migrations applied")
 
 	service := services.NewService(db)
 	app := fiber.New()

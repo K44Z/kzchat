@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/K44Z/kzchat/internal/api"
+	"github.com/K44Z/kzchat/internal/messages"
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/K44Z/kzchat/pkg/screens"
@@ -13,10 +14,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 )
-
-func (m *model) Init() tea.Cmd {
-	return nil
-}
 
 var quitKeys = key.NewBinding(
 	key.WithKeys("ctrl+z"),
@@ -109,8 +106,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.command.Reset()
 				m.command.Blur()
-				m.FocusArea = 2
-				m.chat.Textarea.Focus()
+				m.FocusArea = 1
 				return m, cmd
 			case 2:
 				m.chat.SendMessage(m.chat.Recipient)
@@ -130,6 +126,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.FocusArea = 4
 			m.List.ResetFilter()
 			m.List.FilterInput.Blur()
+		case "ctrl+q":
+			if m.login == nil {
+				m.login = screens.NewLoginModel()
+				m.signup = screens.NewSignupModel()
+			}
+			return m, func() tea.Msg {
+				return messages.ScreenMsg(screens.LoginScreen)
+			}
 		}
 
 		switch m.FocusArea {
@@ -157,18 +161,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 
-	case api.ScreenMsg:
-		m.currentScreen = api.Screen(msg)
+	case messages.ScreenMsg:
+		m.currentScreen = messages.Screen(msg)
 		if m.currentScreen == screens.ChatScreen {
 			m.chat = screens.NewChatModel(m.width, m.height)
 			cmd := m.chat.Init()
 			m.SetList()
-			m.FocusArea = 2
+			m.FocusArea = 1
 			return m, cmd
 		}
 		return m, nil
 
-	case api.WsMsg:
+	case messages.WsMsg:
 		scMesasge := schemas.Message{
 			Content: msg.Content,
 			Time:    msg.Time,
@@ -179,18 +183,18 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.chat, cmd = m.chat.Update(msg, int(m.FocusArea))
 		return m, cmd
 
-	case api.WsConnectedMsg:
+	case messages.WsConnectedMsg:
 		m.chat.Ws = msg.Conn
 		go m.chat.ReadLoop(msg.Conn)
 		return m, nil
 
-	case api.ChatFetchedMsg:
+	case messages.ChatFetchedMsg:
 		m.chat.Messages = msg.Messages
 		m.chat.Viewport.SetContent(m.chat.RenderMessages())
 		m.chat.Viewport.GotoBottom()
 		return m, nil
 
-	case api.ErrMsg:
+	case messages.ErrMsg:
 		m.chat.Err = msg.Error()
 
 	default:
@@ -236,7 +240,6 @@ func (m *model) SetList() {
 	if err != nil {
 		m.chat.Err = "Error fetching the list of users"
 	}
-
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
 	delegate.SetHeight(1)

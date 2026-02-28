@@ -6,16 +6,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/K44Z/kzchat/internal/server/database"
-	sqlc "github.com/K44Z/kzchat/internal/server/database/generated"
-	"github.com/K44Z/kzchat/internal/server/schemas"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/K44Z/kzchat/internal/server/database"
+	sqlc "github.com/K44Z/kzchat/internal/server/database/generated"
+	"github.com/K44Z/kzchat/internal/server/schemas"
 )
 
 type ChatRepository interface {
-	Create(ctx context.Context, arg sqlc.CreateChatParams, users []schemas.User, name string) (*schemas.Chat, error)
+	Create(ctx context.Context, arg sqlc.CreateChatParams, users []schemas.User) (*schemas.Chat, error)
 	CreateMembers(ctx context.Context, arg sqlc.CreateChatMembersParams) error
 	FindByParticipants(ctx context.Context, arg []int32) (*int32, error)
 	GetById(ctx context.Context, id int32) (*schemas.Chat, error)
@@ -36,7 +37,7 @@ func NewChatRepository(db *database.DB) ChatRepository {
 	}
 }
 
-func (c *chatRepository) Create(ctx context.Context, arg sqlc.CreateChatParams, users []schemas.User, name string) (*schemas.Chat, error) {
+func (c *chatRepository) Create(ctx context.Context, arg sqlc.CreateChatParams, users []schemas.User) (*schemas.Chat, error) {
 	tx, err := c.db.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error starting transaction: %s", err)
@@ -45,10 +46,7 @@ func (c *chatRepository) Create(ctx context.Context, arg sqlc.CreateChatParams, 
 
 	ttx := c.queries.WithTx(tx)
 
-	chat, err := ttx.CreateChat(ctx, sqlc.CreateChatParams{
-		Type: "dm",
-		Name: name,
-	})
+	chat, err := ttx.CreateChat(ctx, arg)
 	if err != nil {
 		return nil, wrap(err, "")
 	}
@@ -69,7 +67,7 @@ func (c *chatRepository) Create(ctx context.Context, arg sqlc.CreateChatParams, 
 
 	return &schemas.Chat{
 		ID:   chat.ID,
-		Name: name,
+		Name: arg.Name,
 	}, nil
 }
 
@@ -80,7 +78,7 @@ func (c *chatRepository) CreateMembers(ctx context.Context, arg sqlc.CreateChatM
 	}
 	count := res.RowsAffected()
 	if count == 0 {
-		return fmt.Errorf("No Rows affected")
+		return fmt.Errorf("no Rows affected")
 	}
 	return nil
 }
@@ -159,7 +157,7 @@ func (c *chatRepository) StoreMessage(ctx context.Context, arg sqlc.StoreChatMes
 		return err
 	}
 	if count := res.RowsAffected(); count == 0 {
-		return fmt.Errorf("No Rows affected")
+		return fmt.Errorf("no Rows affected")
 	}
 	return nil
 }

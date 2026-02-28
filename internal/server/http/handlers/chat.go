@@ -58,13 +58,14 @@ func GetChatByParticipantsHandler(s *services.Services) fiber.Handler {
 				ID:       user.ID,
 			})
 		}
-		chatId, err := s.ChatService.GetChatIdByParticipants(c.Context(), []int32{users[0].ID, users[1].ID})
+		chatId, _ := s.ChatService.GetChatIdByParticipants(c.Context(), []int32{users[0].ID, users[1].ID})
 		if chatId == nil {
-			log.Printf("Chat not found")
-			return http.Error(c, fiber.ErrNotFound.Code, "Chat not found")
-		}
-		if err != nil {
-			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
+			chat, err := s.ChatService.CreateChat(c.Context(), users, "dm")
+			if err != nil {
+				log.Println(err)
+				return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
+			}
+			chatId = &chat.ID
 		}
 		return http.Success(c, fiber.Map{
 			"chatId": *chatId,

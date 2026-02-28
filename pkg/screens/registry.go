@@ -90,6 +90,9 @@ var CommandRegistry = map[string]CommandFunc{
 		if len(args) < 1 || len(args) > 2 {
 			return "Usage: open <username>", nil
 		}
+		if args[0] == ctx.Model.Current.Username {
+			return `Cannot self message`, nil
+		}
 		id, users, err := api.GetChat([]string{api.Config.Username, args[0]})
 		if id == nil || users == nil || err != nil {
 			return fmt.Sprintf("Error opening chat: %v", err), nil

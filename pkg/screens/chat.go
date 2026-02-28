@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/K44Z/kzchat/internal/helpers"
+	"github.com/K44Z/kzchat/internal/messages"
 
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
@@ -15,14 +16,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gorilla/websocket"
-)
-
-type FocusArea int
-
-const (
-	ViewPort FocusArea = iota
-	InputBox
-	CommandBox
 )
 
 type ChatModel struct {
@@ -56,13 +49,10 @@ func NewChatModel(width int, height int) *ChatModel {
 
 	ta := textarea.New()
 	ta.Placeholder = "Send a message..."
-	ta.Focus()
 	ta.CharLimit = 500
 
 	textareaWidth := chatWidth - 4
-	if textareaWidth < 20 {
-		textareaWidth = 20
-	}
+	textareaWidth = max(textareaWidth, 20)
 
 	ta.SetWidth(textareaWidth)
 	ta.SetHeight(1)
@@ -136,7 +126,7 @@ func (m *ChatModel) Update(msg tea.Msg, focusedArea int) (*ChatModel, tea.Cmd) {
 			m.Textarea, cmd = m.Textarea.Update(msg)
 			cmds = append(cmds, cmd)
 		}
-	case api.ErrMsg:
+	case messages.ErrMsg:
 		m.Err = msg.Error()
 
 	case tea.WindowSizeMsg:
@@ -164,7 +154,6 @@ func (m *ChatModel) Update(msg tea.Msg, focusedArea int) (*ChatModel, tea.Cmd) {
 		m.Viewport.MouseWheelEnabled = true
 		m.Viewport.MouseWheelDelta = 1
 		m.Viewport.SetContent(m.RenderMessages())
-
 		m.Viewport.YPosition = oldYPosition
 		m.Ready = true
 	}
@@ -187,14 +176,14 @@ func (m *ChatModel) HandleChatCommand() tea.Cmd {
 		output, cmd = handler(CommandContext{Model: m}, args)
 		if output != "" && cmd == nil {
 			return func() tea.Msg {
-				return api.ErrMsg(fmt.Errorf("%s", output))
+				return messages.ErrMsg(fmt.Errorf("%s", output))
 			}
 		} else if output != "" && cmd != nil {
 			displayOutput := output
 			originalCmd := cmd
 			return tea.Batch(
 				func() tea.Msg {
-					return api.ErrMsg(fmt.Errorf("%s", displayOutput))
+					return messages.ErrMsg(fmt.Errorf("%s", displayOutput))
 				},
 				originalCmd,
 			)
@@ -214,9 +203,7 @@ func (m *ChatModel) View() string {
 	compactMode := m.Width < 100
 
 	contentBoxHeight := m.ContentHeight - 2
-	if contentBoxHeight < 5 {
-		contentBoxHeight = 5
-	}
+	contentBoxHeight = max(contentBoxHeight, 5)
 
 	leftStyle := lipgloss.NewStyle().
 		Border(lipgloss.ThickBorder(), true, true).
@@ -228,9 +215,7 @@ func (m *ChatModel) View() string {
 		Align(lipgloss.Left)
 
 	chatBoxWidth := m.ChatWidth - 8
-	if chatBoxWidth < 20 {
-		chatBoxWidth = 20
-	}
+	chatBoxWidth = max(chatBoxWidth, 20)
 
 	chatStyle := lipgloss.NewStyle().
 		Border(lipgloss.ThickBorder(), true, true).
@@ -372,18 +357,14 @@ func (m *ChatModel) RenderMessages() string {
 func (m *ChatModel) renderRightSidebar() string {
 	var content strings.Builder
 
-	headerStyle := lipgloss.NewStyle().
-		Bold(true).
-		Underline(true)
-
 	titleStyle := lipgloss.NewStyle().Align(lipgloss.Center).
 		Foreground(lipgloss.Color("#8839ef"))
 
-	content.WriteString(titleStyle.Render(fmt.Sprintf("%v", m.Chat.Name)))
-	content.WriteString("\n\n")
-	content.WriteString(headerStyle.Render("USER INFO"))
-	content.WriteString("\n\n")
-	content.WriteString(fmt.Sprintf("Name: %s\n", m.Current.Username))
+	if m.Chat.Name != "" {
+		content.WriteString(titleStyle.Render(fmt.Sprintf("%v", m.Chat.Name)))
+	} else {
+		content.WriteString(fmt.Sprintf("Name: %s\n", m.Current.Username))
+	}
 	return content.String()
 }
 
@@ -401,6 +382,7 @@ Controls:
   - Press [esc]             → Exit current input mode
   - Press [/]               → Browse users
   - Press [Ctrl+z]          → Quit the app
+  - Press [Ctrl+q]          → Login screen
 `
 
 	renderWidth := min(width, 100)

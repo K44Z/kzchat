@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/K44Z/kzchat/internal/api"
+	"github.com/K44Z/kzchat/internal/messages"
 
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	SignupScreen api.Screen = iota
+	SignupScreen messages.Screen = iota
 	LoginScreen
 	ChatScreen
 )
@@ -37,9 +38,9 @@ func (m *ChatModel) ConnectToWs() tea.Cmd {
 		header.Add("Authorization", "Bearer "+api.Config.Token)
 		c, _, err := websocket.DefaultDialer.Dial(api.WS_URL+"/ws", header)
 		if err != nil {
-			return api.ErrMsg(err)
+			return messages.ErrMsg(err)
 		}
-		return api.WsConnectedMsg{c}
+		return messages.WsConnectedMsg{Conn: c}
 	}
 }
 
@@ -49,7 +50,7 @@ func (m *ChatModel) ReadLoop(conn *websocket.Conn) {
 		if err := conn.ReadJSON(&msg); err != nil {
 			break
 		}
-		Messages <- api.WsMsg{Content: msg.Content, Time: msg.Time, Sender: msg.Sender}
+		Messages <- messages.WsMsg{Content: msg.Content, Time: msg.Time, Sender: msg.Sender}
 	}
 }
 
@@ -58,23 +59,23 @@ func (m *ChatModel) FetchMessages() tea.Cmd {
 		client := &http.Client{}
 		req, err := http.NewRequest("GET", api.BASE_URL+"/messages/recipient/"+string(m.Recipient.Username), nil)
 		if err != nil {
-			return api.ErrMsg(err)
+			return messages.ErrMsg(err)
 		}
 		req.Header.Add("Authorization", "Bearer "+api.Config.Token)
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
-			return api.ErrMsg(err)
+			return messages.ErrMsg(err)
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			return api.ErrMsg(err)
+			return messages.ErrMsg(err)
 		}
 		var apiResp FetchMessagesResponse
 		if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-			return api.ErrMsg(err)
+			return messages.ErrMsg(err)
 		}
-		return api.ChatFetchedMsg{Messages: apiResp.Data.Messages}
+		return messages.ChatFetchedMsg{Messages: apiResp.Data.Messages}
 	}
 }
 

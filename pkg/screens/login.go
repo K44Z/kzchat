@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
-	"net/http"
-
+	"github.com/K44Z/kzchat/internal/messages"
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/K44Z/kzchat/internal/api"
@@ -46,7 +46,7 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 		switch msg.String() {
 		case "`":
 			return m, func() tea.Msg {
-				return api.ScreenMsg(SignupScreen)
+				return messages.ScreenMsg(SignupScreen)
 			}
 		case "tab":
 			m.focusIndex = (m.focusIndex + 1) % 3
@@ -85,7 +85,7 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 						m.err = "error saving token locally"
 					}
 					return m, func() tea.Msg {
-						return api.ScreenMsg(ChatScreen)
+						return messages.ScreenMsg(ChatScreen)
 					}
 				} else {
 					m.focusIndex = 0
@@ -105,7 +105,6 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 }
 
 func (m *LoginModel) View() string {
-
 	var b strings.Builder
 
 	b.WriteString("\n\n\n\n\n\n\n\n\n\n\n\n\n") // change this
@@ -135,7 +134,6 @@ func (m *LoginModel) View() string {
 	if m.err != "" {
 		b.WriteString("\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("Error: "+m.err))
 	}
-
 	return b.String()
 }
 

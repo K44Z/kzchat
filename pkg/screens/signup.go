@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/K44Z/kzchat/internal/api"
+	"github.com/K44Z/kzchat/internal/messages"
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -75,7 +76,7 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 		switch msg.String() {
 		case "`":
 			return m, func() tea.Msg {
-				return api.ScreenMsg(LoginScreen)
+				return messages.ScreenMsg(LoginScreen)
 			}
 		case "tab":
 			m.focusIndex = (m.focusIndex + 1) % 3
@@ -103,7 +104,7 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 				defer resp.Body.Close()
 				if resp.StatusCode == 200 {
 					return m, func() tea.Msg {
-						return api.ScreenMsg(LoginScreen)
+						return messages.ScreenMsg(LoginScreen)
 					}
 				} else {
 					var response map[string]string
@@ -122,7 +123,6 @@ func (m *SignupModel) Update(msg tea.Msg) (*SignupModel, tea.Cmd) {
 				m.err = "All Fields are required"
 			}
 		}
-
 	}
 
 	for i := range m.inputs {
