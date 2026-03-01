@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,11 +31,10 @@ func main() {
 		log.Fatal("error loading env file from: ", envPath)
 	}
 
-	db, err := database.ConnectDb(config)
+	db, err := database.ConnectDB(config)
 	if err != nil {
 		log.Fatal("Error connecting to the database", err)
 	}
-	fmt.Println("Migrations applied")
 
 	service := services.NewService(db)
 	app := fiber.New()

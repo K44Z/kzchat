@@ -44,7 +44,6 @@ func NewModel() model {
 	m.command = command
 	m.login = s.NewLoginModel()
 	m.signup = s.NewSignupModel()
-	m.FocusArea = 0
 	return m
 }
 

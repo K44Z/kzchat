@@ -15,7 +15,7 @@ type DB struct {
 	Pool *pgxpool.Pool
 }
 
-func ConnectDb(c *configs.Config) (*DB, error) {
+func ConnectDB(c *configs.Config) (*DB, error) {
 	conn, err := pgxpool.New(context.Background(), c.DbUrl)
 	if err != nil {
 		return nil, err

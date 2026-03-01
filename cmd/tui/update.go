@@ -91,11 +91,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.FocusArea = 1
 			return m, cmd
-		// case "/":
-		// 	if m.FocusArea == 4 {
-		// 		m.List.FilterInput.Focus()
-		// 		return m, nil
-		// 	}
 		case "enter":
 			switch m.FocusArea {
 			case 3:
@@ -122,7 +117,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.FocusArea = 1
 				return m, cmd
 			}
-		case "ctrl+s":
+		case "ctrl+o":
 			m.FocusArea = 4
 			m.List.ResetFilter()
 			m.List.FilterInput.Blur()

@@ -372,17 +372,18 @@ func (m *ChatModel) renderGuide(width int) string {
 	guideText := `
 Welcome to kzchat.
 
-Available commands:
-  - open <username>         → Open chat with a user
-  - dm <username> <message> → Send a direct message without opening chat
-
 Controls:
   - Press [i]               → Enter input mode
   - Press [:]               → Open command bar
   - Press [esc]             → Exit current input mode
-  - Press [/]               → Browse users
+
+  - Press [Ctrl+o]          → Browse users
   - Press [Ctrl+z]          → Quit the app
   - Press [Ctrl+q]          → Login screen
+
+Available commands:
+	- :open <username>         → Open chat with a user
+	- :dm <username> <message> → Send a direct message without opening chat
 `
 
 	renderWidth := min(width, 100)
