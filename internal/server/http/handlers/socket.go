@@ -29,7 +29,6 @@ func Broadcast(s *services.Services) func(*websocket.Conn) {
 			if err != nil {
 				break
 			}
-			fmt.Println("message received:", string(msg))
 
 			var m schemas.Message
 			err = json.Unmarshal(msg, &m)

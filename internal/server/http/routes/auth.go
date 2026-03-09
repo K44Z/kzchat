@@ -13,4 +13,5 @@ import (
 func AuthRouter(router fiber.Router, s *services.Services) {
 	router.Post("/register", middleware.ValidateBody[schemas.Auth](), h.RegisterHandler(s))
 	router.Post("/login", middleware.ValidateBody[schemas.Auth](), h.LoginHanlder(s))
+	router.Post("/validate", middleware.Jwt, h.ValidateTokenHandler(s))
 }

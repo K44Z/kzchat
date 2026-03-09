@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"strings"
+	"time"
 
 	"github.com/K44Z/kzchat/internal/api"
 	"github.com/K44Z/kzchat/internal/messages"
@@ -18,6 +19,14 @@ import (
 var quitKeys = key.NewBinding(
 	key.WithKeys("ctrl+z"),
 )
+
+type clearErrorMsg struct{}
+
+func clearErrorAfter(t time.Duration) tea.Cmd {
+	return tea.Tick(t, func(_ time.Time) tea.Msg {
+		return clearErrorMsg{}
+	})
+}
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
@@ -116,6 +125,21 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.FocusArea = 1
 				return m, cmd
+			case 5:
+				var cmd tea.Cmd
+				m.chat.FilePicker, cmd = m.chat.FilePicker.Update(msg)
+				if didSelect, path := m.chat.FilePicker.DidSelectFile(msg); didSelect {
+					m.chat.SelectedFile = path
+					m.chat.SendMessage(m.chat.Recipient)
+					m.chat.HandleFileUpload()
+					m.FocusArea = 1
+				}
+				if didSelect, path := m.chat.FilePicker.DidSelectDisabledFile(msg); didSelect {
+					m.chat.Err = errors.New(path + " is not valid.").Error()
+					m.chat.SelectedFile = ""
+					return m, tea.Batch(cmd, clearErrorAfter(2*time.Second))
+				}
+				return m, cmd
 			}
 		case "ctrl+o":
 			m.FocusArea = 4
@@ -129,6 +153,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, func() tea.Msg {
 				return messages.ScreenMsg(screens.LoginScreen)
 			}
+		case "ctrl+f":
+			var cmd tea.Cmd
+			m.FocusArea = 5
+			m.chat.FilePicker, cmd = m.chat.FilePicker.Update(msg)
+			return m, cmd
 		}
 
 		switch m.FocusArea {
@@ -200,6 +229,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.List, cmd = m.List.Update(msg)
 	cmds = append(cmds, cmd)
+	m.chat.FilePicker, cmd = m.chat.FilePicker.Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
@@ -213,15 +244,12 @@ func (m *model) handleCommand(c string) tea.Cmd {
 }
 
 func (m *model) handleRecipientSelection(r schemas.User) (tea.Cmd, error) {
-	id, users, err := api.GetChat([]string{api.Config.Username, r.Username})
+	chat, users, err := api.GetChat([]string{api.Config.Username, r.Username})
 	if users == nil || err != nil {
 		return nil, err
 	}
-	chat := schemas.Chat{
-		Name: fmt.Sprint(api.Config.Username, " - ", r.Username),
-		ID:   *id,
-	}
-	m.chat.Chat = chat
+
+	m.chat.Chat = *chat
 	m.chat.Recipient.Username = r.Username
 	cmd := m.chat.FetchMessages()
 	m.chat.Current = users[0]

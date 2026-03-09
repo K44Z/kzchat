@@ -18,11 +18,13 @@ import (
 type ChatRepository interface {
 	Create(ctx context.Context, arg sqlc.CreateChatParams, users []schemas.User) (*schemas.Chat, error)
 	CreateMembers(ctx context.Context, arg sqlc.CreateChatMembersParams) error
-	FindByParticipants(ctx context.Context, arg []int32) (*int32, error)
+	FindByParticipants(ctx context.Context, arg []int32) (*int32, string, error)
 	GetById(ctx context.Context, id int32) (*schemas.Chat, error)
 	GetMessagesByChatId(ctx context.Context, id int32) ([]schemas.Message, error)
 	GetMessagesByParticipants(ctx context.Context, arg sqlc.GetDmChatMessagesByParticipantsParams) ([]schemas.Message, error)
 	StoreMessage(ctx context.Context, arg sqlc.StoreChatMessageParams) error
+	GetAttachementByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error)
+	GetAttachementsByChat(ctx context.Context, id int32) ([]schemas.Attachment, error)
 }
 
 type chatRepository struct {
@@ -83,15 +85,15 @@ func (c *chatRepository) CreateMembers(ctx context.Context, arg sqlc.CreateChatM
 	return nil
 }
 
-func (c *chatRepository) FindByParticipants(ctx context.Context, arg []int32) (*int32, error) {
-	id, err := c.queries.FindChatByParticipants(ctx, arg)
+func (c *chatRepository) FindByParticipants(ctx context.Context, arg []int32) (*int32, string, error) {
+	res, err := c.queries.FindChatByParticipants(ctx, arg)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, fiber.ErrNotFound
+		return nil, "", fiber.ErrNotFound
 	}
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return &id, nil
+	return &res.ChatID, res.ChatName, nil
 }
 
 func (c *chatRepository) GetById(ctx context.Context, id int32) (*schemas.Chat, error) {
@@ -148,6 +150,7 @@ func (c *chatRepository) GetMessagesByParticipants(ctx context.Context, arg sqlc
 			Receiver: receiver,
 		})
 	}
+	fmt.Println("repo ", messages)
 	return messages, nil
 }
 
@@ -160,4 +163,40 @@ func (c *chatRepository) StoreMessage(ctx context.Context, arg sqlc.StoreChatMes
 		return fmt.Errorf("no Rows affected")
 	}
 	return nil
+}
+
+func (c *chatRepository) GetAttachementByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error) {
+	var result []schemas.Attachment
+	res, err := c.queries.GetAttachementsByMessageId(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	for _, a := range res {
+		result = append(result, schemas.Attachment{
+			ID:       a.ID,
+			FileName: a.FileName,
+			FileType: a.FileType,
+			FileSize: a.FileSize,
+			URL:      a.FileUrl,
+		})
+	}
+	return result, nil
+}
+
+func (c *chatRepository) GetAttachementsByChat(ctx context.Context, id int32) ([]schemas.Attachment, error) {
+	var result []schemas.Attachment
+	res, err := c.queries.GetAttachementsByChatId(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	for _, a := range res {
+		result = append(result, schemas.Attachment{
+			ID:       a.ID,
+			FileName: a.FileName,
+			FileType: a.FileType,
+			FileSize: a.FileSize,
+			URL:      a.FileUrl,
+		})
+	}
+	return result, nil
 }

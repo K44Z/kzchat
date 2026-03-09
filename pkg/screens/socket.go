@@ -80,7 +80,7 @@ func (m *ChatModel) FetchMessages() tea.Cmd {
 }
 
 func (m *ChatModel) SendMessage(recipient schemas.User) {
-	inputValue := strings.TrimSpace(m.Textarea.Value())
+	inputValue := strings.TrimSpace(m.Textarea.Value() + " " + m.SelectedFile)
 	if m.Recipient.ID == 0 || m.Recipient.Username == "" {
 		m.Err = "Please select a recipient before sending a message"
 		return

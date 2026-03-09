@@ -16,8 +16,9 @@ type ChatService interface {
 	GetChatById(ctx context.Context, id int32) (*schemas.Chat, error)
 	GetMessagesByParticipants(ctx context.Context, current, rec schemas.User) ([]schemas.Message, error)
 	CreateDM(ctx context.Context, m schemas.Message) error
-	GetChatIdByParticipants(ctx context.Context, arg []int32) (*int32, error)
+	GetChatIdByParticipants(ctx context.Context, arg []int32) (id *int32, name string, err error)
 	CreateChat(ctx context.Context, users []schemas.User, chatType string) (*schemas.Chat, error)
+	GetAttachmentsByChatService(ctx context.Context, id int32) ([]schemas.Attachment, error)
 }
 
 type chatService struct {
@@ -111,7 +112,7 @@ func (c *chatService) CreateDM(ctx context.Context, m schemas.Message) error {
 	return nil
 }
 
-func (s *chatService) GetChatIdByParticipants(ctx context.Context, arg []int32) (id *int32, err error) {
+func (s *chatService) GetChatIdByParticipants(ctx context.Context, arg []int32) (id *int32, name string, err error) {
 	defer wrap(err, "")
 	return s.chatRepo.FindByParticipants(ctx, arg)
 }
@@ -126,4 +127,20 @@ func (s *chatService) CreateChat(ctx context.Context, users []schemas.User, chat
 		return nil, err
 	}
 	return chat, nil
+}
+
+func (s *chatService) GetAttachmentByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error) {
+	res, err := s.chatRepo.GetAttachementByMessage(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (s *chatService) GetAttachmentsByChatService(ctx context.Context, id int32) ([]schemas.Attachment, error) {
+	res, err := s.chatRepo.GetAttachementsByChat(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }

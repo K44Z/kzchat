@@ -8,9 +8,22 @@ type Auth struct {
 	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required,min=6"`
 }
+
+type Token struct {
+	Token string `json:"token" validate:"required"`
+}
+
 type Config struct {
 	Username string `json:"username" validate:"required"`
 	Token    string `json:"token" validate:"required"`
+}
+
+type Attachment struct {
+	ID       int32  `json:"id"`
+	FileName string `json:"file_name"`
+	FileType string `json:"file_type"`
+	FileSize int32  `json:"file_size"`
+	URL      string `json:"url"`
 }
 
 func (a Auth) Read(p []byte) (n int, err error) {
@@ -26,8 +39,9 @@ type Message struct {
 }
 
 type Chat struct {
-	ID   int32  `json:"id"`
-	Name string `json:"name"`
+	ID          int32        `json:"id"`
+	Name        string       `json:"name"`
+	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
 type CreateMessageSchema struct {

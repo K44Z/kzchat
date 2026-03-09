@@ -20,7 +20,7 @@ import (
 type LoginModel struct {
 	inputs     []textinput.Model
 	focusIndex int
-	err        string
+	Err        string
 }
 
 func NewLoginModel() *LoginModel {
@@ -42,7 +42,7 @@ func NewLoginModel() *LoginModel {
 func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		m.err = ""
+		m.Err = ""
 		switch msg.String() {
 		case "`":
 			return m, func() tea.Msg {
@@ -61,19 +61,19 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 				auth := schemas.Auth{Username: username, Password: password}
 				jsonData, err := json.Marshal(auth)
 				if err != nil {
-					m.err = "Error preparing request: " + err.Error()
+					m.Err = "Error preparing request: " + err.Error()
 					return m, nil
 				}
 				url := fmt.Sprintf("%s/auth/login", api.BASE_URL)
 				resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 				if err != nil {
-					m.err = "Error sending request: " + err.Error()
+					m.Err = "Error sending request: " + err.Error()
 					return m, nil
 				}
 				defer resp.Body.Close()
 				var apiResp api.ApiResponse
 				if err = json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
-					m.err = "error parsing response"
+					m.Err = "error parsing response"
 					return m, nil
 				}
 				if resp.StatusCode == 200 {
@@ -82,7 +82,7 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 						config := schemas.Config{Token: token, Username: username}
 						api.SaveConfig(config)
 					} else {
-						m.err = "error saving token locally"
+						m.Err = "error saving token locally"
 					}
 					return m, func() tea.Msg {
 						return messages.ScreenMsg(ChatScreen)
@@ -90,10 +90,10 @@ func (m *LoginModel) Update(msg tea.Msg) (*LoginModel, tea.Cmd) {
 				} else {
 					m.focusIndex = 0
 					m.handleFocus()
-					m.err = apiResp.Message
+					m.Err = apiResp.Message
 				}
 			} else {
-				m.err = "All Fields are required"
+				m.Err = "All Fields are required"
 			}
 		}
 	}
@@ -131,8 +131,8 @@ func (m *LoginModel) View() string {
 	}
 	b.WriteString(button + "\n\n")
 
-	if m.err != "" {
-		b.WriteString("\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("Error: "+m.err))
+	if m.Err != "" {
+		b.WriteString("\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("Error: "+m.Err))
 	}
 	return b.String()
 }

@@ -1,3 +1,7 @@
+-- +goose Up
+-- +goose StatementBegin
+SELECT 'up SQL query';
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -8,6 +12,7 @@ CREATE TABLE users (
 
 CREATE TABLE chats (
     id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
     type TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -31,3 +36,20 @@ CREATE TABLE chat_members (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE attachments (
+    id SERIAL PRIMARY KEY,
+    message_id INTEGER NOT NULL,
+    file_name TEXT NOT NULL,
+    file_type TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    file_url TEXT NOT NULL,
+    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+);
+
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+-- +goose StatementEnd

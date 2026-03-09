@@ -11,6 +11,7 @@ import (
 
 func MessagesRouter(router fiber.Router, s *services.Services) {
 	router.Get("/recipient/:username", middleware.Jwt, h.GetDmsByrecipientUsernameHandler(s))
-	router.Post("/chat", middleware.ValidateBody[schemas.GetChatIdByParticipants](), middleware.Jwt, h.GetChatByParticipantsHandler(s))
-	router.Post("/createChat", middleware.ValidateBody[schemas.CreateChatByMessage](), middleware.Jwt, h.CreateChatFromMessageHandler(s))
+	router.Post("/chat", middleware.Jwt, middleware.ValidateBody[schemas.GetChatIdByParticipants](), h.GetChatByParticipantsHandler(s))
+	router.Post("/createChat", middleware.Jwt, middleware.ValidateBody[schemas.CreateChatByMessage](), h.CreateChatFromMessageHandler(s))
+	router.Post("/upload", middleware.Jwt, h.UploadHandler(s))
 }

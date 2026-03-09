@@ -21,17 +21,20 @@ const (
 	InputBox
 	CommandBox
 	List
+	FilePicker
 )
 
 func (m *model) Init() tea.Cmd {
 	return func() tea.Msg {
 		configErr := api.ReadConfig()
-		// valid := api.IsTokenValid(api.Config.Token)
-
 		if api.Config.Token == "" || configErr != nil {
 			return messages.ScreenMsg(s.LoginScreen)
 		}
-
+		err := api.IsTokenValid(api.Config.Token)
+		if err != nil {
+			m.login.Err = err.Error()
+			return messages.ScreenMsg(s.LoginScreen)
+		}
 		return messages.ScreenMsg(s.ChatScreen)
 	}
 }

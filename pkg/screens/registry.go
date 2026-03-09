@@ -47,11 +47,12 @@ var CommandRegistry = map[string]CommandFunc{
 		tempRecipient := ctx.Model.Recipient
 		tempInput := ctx.Model.Textarea.Value()
 		var (
-			chatID *int32
-			chat   schemas.Chat
+			chat  *schemas.Chat
+			users []schemas.User
+			err   error
 		)
 
-		chatID, users, err := api.GetChat([]string{api.Config.Username, recipient})
+		chat, users, err = api.GetChat([]string{api.Config.Username, recipient})
 		if err != nil {
 			var cusError *api.NotFoundErr
 			if errors.As(err, &cusError) {
@@ -69,14 +70,14 @@ var CommandRegistry = map[string]CommandFunc{
 				if err != nil {
 					return err.Error(), nil
 				}
-				ctx.Model.Chat = chat
+				ctx.Model.Chat = *chat
 			} else {
 				return err.Error(), nil
 			}
 		} else {
 			ctx.Model.Current = users[0]
 			ctx.Model.Recipient = users[1]
-			ctx.Model.Chat.ID = *chatID
+			ctx.Model.Chat.ID = chat.ID
 		}
 
 		ctx.Model.Textarea.SetValue(message)
@@ -93,15 +94,12 @@ var CommandRegistry = map[string]CommandFunc{
 		if args[0] == ctx.Model.Current.Username {
 			return `Cannot self message`, nil
 		}
-		id, users, err := api.GetChat([]string{api.Config.Username, args[0]})
-		if id == nil || users == nil || err != nil {
+		chat, users, err := api.GetChat([]string{api.Config.Username, args[0]})
+		if chat == nil || users == nil || err != nil {
 			return fmt.Sprintf("Error opening chat: %v", err), nil
 		}
-		chat := schemas.Chat{
-			Name: fmt.Sprint(api.Config.Username, " - ", args[0]),
-			ID:   *id,
-		}
-		ctx.Model.Chat = chat
+
+		ctx.Model.Chat = *chat
 		ctx.Model.Current = users[0]
 		ctx.Model.Recipient = users[1]
 

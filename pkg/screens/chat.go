@@ -2,6 +2,7 @@ package screens
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/K44Z/kzchat/internal/helpers"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/K44Z/kzchat/internal/api"
 
+	"github.com/charmbracelet/bubbles/filepicker"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -39,9 +41,16 @@ type ChatModel struct {
 	Content       string
 	Ready         bool
 	ListView      bool
+	FilePicker    filepicker.Model
+	SelectedFile  string
 }
 
 func NewChatModel(width int, height int) *ChatModel {
+	var (
+		errorString string
+		err         error
+	)
+
 	leftWidth := helpers.ComputeSideWidth(width)
 	rightWidth := helpers.ComputeSideWidth(width)
 	chatWidth := helpers.ComputeChatWidth(width, leftWidth, rightWidth)
@@ -75,20 +84,32 @@ func NewChatModel(width int, height int) *ChatModel {
 	currentUser := schemas.User{
 		Username: api.Config.Username,
 	}
+	fp := filepicker.New()
+	fp.AllowedTypes = []string{".mod", ".sum", ".go", ".txt", ".md"}
+	fp.CurrentDirectory, err = os.UserHomeDir()
+	fp.SetHeight(height - 5)
+	if err == nil {
+		errorString = ""
+	} else {
+		errorString = err.Error()
+	}
+
+	filepicker.New()
 	m := &ChatModel{
 		Messages:      []schemas.Message{},
 		Current:       currentUser,
-		Channels:      []string{"general", "random", "dev", "help"},
+		Channels:      []string{},
 		Width:         width,
 		Height:        height,
 		Textarea:      ta,
-		Err:           "",
+		Err:           errorString,
 		Viewport:      vp,
 		ContentHeight: contentHeight,
 		ChatWidth:     chatWidth,
 		RightWidth:    rightWidth,
 		LeftWidth:     leftWidth,
 		Ready:         true,
+		FilePicker:    fp,
 	}
 	str := m.RenderMessages()
 	m.Viewport.SetContent(str)
@@ -96,7 +117,7 @@ func NewChatModel(width int, height int) *ChatModel {
 }
 
 func (m *ChatModel) Init() tea.Cmd {
-	return m.ConnectToWs()
+	return tea.Batch(m.ConnectToWs(), m.FilePicker.Init())
 }
 
 func (m *ChatModel) Update(msg tea.Msg, focusedArea int) (*ChatModel, tea.Cmd) {
@@ -226,24 +247,23 @@ func (m *ChatModel) View() string {
 		Padding(1, 1).
 		Align(lipgloss.Left)
 
-	rightStyle := lipgloss.NewStyle().
-		Border(lipgloss.ThickBorder(), true, true).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#414559")).
-		Width(m.RightWidth).
-		Height(contentBoxHeight).
-		Padding(1, 1).
-		Align(lipgloss.Left)
+	// rightStyle := lipgloss.NewStyle().
+	// 	Border(lipgloss.ThickBorder(), true, true).
+	// 	BorderStyle(lipgloss.RoundedBorder()).
+	// 	BorderForeground(lipgloss.Color("#414559")).
+	// 	Width(m.RightWidth).
+	// 	Height(contentBoxHeight).
+	// 	Padding(1, 1).
+	// 	Align(lipgloss.Left)
 
 	leftSection := leftStyle.Render(m.renderLeftSidebar())
 	chatSection := chatStyle.Render(m.Viewport.View())
-	rightSection := rightStyle.Render(m.renderRightSidebar())
 
 	var mainContent string
 	if compactMode {
 		mainContent = chatSection
 	} else {
-		mainContent = lipgloss.JoinHorizontal(lipgloss.Top, leftSection, chatSection, rightSection)
+		mainContent = lipgloss.JoinHorizontal(lipgloss.Top, leftSection, chatSection)
 	}
 	var textareaWidth int
 	if compactMode {
@@ -316,9 +336,7 @@ func (m *ChatModel) renderLeftSidebar() string {
 func (m *ChatModel) RenderMessages() string {
 	var content strings.Builder
 	messageAreaWidth := m.ChatWidth - 10
-	if messageAreaWidth < 20 {
-		messageAreaWidth = 20
-	}
+	messageAreaWidth = max(messageAreaWidth, 20)
 
 	if len(m.Messages) == 0 {
 		content.WriteString(m.renderGuide(messageAreaWidth))
@@ -394,4 +412,11 @@ Available commands:
 		Render(guideText)
 
 	return content
+}
+
+func (m *ChatModel) HandleFileUpload() {
+	err := api.UploadFile(m.SelectedFile)
+	if err != nil {
+		m.Err = err.Error()
+	}
 }

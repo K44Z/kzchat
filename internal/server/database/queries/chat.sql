@@ -26,7 +26,7 @@ JOIN chat_members cm_receiver
 JOIN users u_receiver
     ON cm_receiver.user_id = u_receiver.id
 WHERE c.type = 'dm'
-  AND m.chat_id = (
+  AND m.chat_id IN (
       SELECT cm1.chat_id
       FROM chat_members cm1
       WHERE cm1.user_id IN ($1, $2)
@@ -50,17 +50,33 @@ INSERT INTO chat_members(chat_id, user_id)
 VALUES($1, $2);
 
 -- name: FindChatByParticipants :one
-SELECT cm.chat_id
+SELECT c.id AS chat_id, c.name AS chat_name
 FROM chat_members cm
+JOIN chats c ON c.id = cm.chat_id
 WHERE cm.user_id = ANY($1::int[])
-GROUP BY cm.chat_id
+GROUP BY c.id, c.name
 HAVING COUNT(*) = 2
    AND COUNT(*) = (
        SELECT COUNT(*)
        FROM chat_members cm2
-       WHERE cm2.chat_id = cm.chat_id
+       WHERE cm2.chat_id = cm.id
    );
 
 -- name: GetChatById :one
 SELECT * FROM chats
 WHERE id = $1;
+
+
+-- name: GetAttachementsByMessageId :many
+SELECT * 
+FROM attachments
+WHERE message_id = $1;
+
+
+-- name: GetAttachementsByChatId :many 
+SELECT * 
+FROM attachments a
+JOIN messages m ON a.message_id = m.id
+WHERE m.chat_id = $1
+ORDER BY a.uploaded_at ASC;
+

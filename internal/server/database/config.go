@@ -8,8 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var err error
-
 type DB struct {
 	DBTX sqlc.DBTX
 	Pool *pgxpool.Pool

@@ -72,5 +72,12 @@ func (m model) View() string {
 			Height(m.height - 2).
 			Render(content)
 	}
+	if m.FocusArea == 5 {
+		box = layoutStyle.
+			Width(m.width).
+			Height(m.height - 2).
+			Render(m.chat.FilePicker.View())
+	}
+
 	return box + "\n" + bar + "\n" + command
 }

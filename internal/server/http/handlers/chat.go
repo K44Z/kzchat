@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/K44Z/kzchat/internal/server/http"
 
@@ -19,18 +21,21 @@ func GetDmsByrecipientUsernameHandler(s *services.Services) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		username := c.Params("username")
 		if username == "" {
+			log.Println("Username is required")
 			return http.Error(c, fiber.ErrBadRequest.Code, "Username is required")
 		}
 		currentUser := c.Locals("user").(*schemas.User)
-
 		rec, err := s.UserService.GetUserByUsername(c.Context(), username)
 		if errors.Is(err, pgx.ErrNoRows) {
+			log.Println(err)
 			return http.Error(c, fiber.ErrNotFound.Code, fmt.Sprint("User ", username, " does not exist"))
 		} else if err != nil {
+			log.Println(err)
 			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
 		messages, err := s.ChatService.GetMessagesByParticipants(c.Context(), *currentUser, *rec)
 		if err != nil {
+			log.Println(err)
 			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
 		return http.Success(c, map[string]interface{}{
@@ -58,18 +63,25 @@ func GetChatByParticipantsHandler(s *services.Services) fiber.Handler {
 				ID:       user.ID,
 			})
 		}
-		chatId, _ := s.ChatService.GetChatIdByParticipants(c.Context(), []int32{users[0].ID, users[1].ID})
-		if chatId == nil {
+		chatID, name, _ := s.ChatService.GetChatIdByParticipants(c.Context(), []int32{users[0].ID, users[1].ID})
+		if chatID == nil {
 			chat, err := s.ChatService.CreateChat(c.Context(), users, "dm")
 			if err != nil {
 				log.Println(err)
 				return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 			}
-			chatId = &chat.ID
+			chatID = &chat.ID
+			name = chat.Name
+		}
+		attachements, err := s.ChatService.GetAttachmentsByChatService(c.Context(), *chatID)
+		if err != nil {
+			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
 		return http.Success(c, fiber.Map{
-			"chatId": *chatId,
-			"users":  users,
+			"chatId":      *chatID,
+			"name":        name,
+			"attachments": attachements,
+			"users":       users,
 		})
 	}
 }
@@ -95,8 +107,32 @@ func CreateChatFromMessageHandler(s *services.Services) fiber.Handler {
 			log.Print(err)
 			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
 		}
-		return http.Created(c, map[string]interface{}{
+		return http.Created(c, map[string]any{
 			"chat": chat,
+		})
+	}
+}
+
+func UploadHandler(s *services.Services) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		fmt.Println("Handling Upload")
+		f, err := c.FormFile("file")
+		if err != nil {
+			log.Println(err)
+			return http.Error(c, 500, fiber.ErrInternalServerError.Error())
+		}
+
+		uploadDir := "./uploads"
+		if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+			return fmt.Errorf("failed to create upload directory: %w", err)
+		}
+		err = c.SaveFile(f, filepath.Join(uploadDir, f.Filename))
+		if err != nil {
+			log.Println(err)
+			return http.Error(c, 500, fiber.ErrInternalServerError.Error())
+		}
+		return http.Success(c, map[string]any{
+			"filename": f.Filename,
 		})
 	}
 }
