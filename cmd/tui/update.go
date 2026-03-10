@@ -142,8 +142,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmd
 			case 6:
 				var cmd tea.Cmd
-				selectedItem := m.chat.AttachmentList.SelectedItem().(schemas.Attachment)
-				cmd, err := m.handleFileDownload(selectedItem)
+				m.chat.SelectedFile = m.chat.FilesList.SelectedItem().FilterValue()
+				cmd, err := m.handleFileDownload()
 				if err != nil {
 					return m, nil
 				}
@@ -169,8 +169,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		case "ctrl+a":
 			m.FocusArea = 6
-			m.chat.AttachmentList.ResetFilter()
-			m.chat.AttachmentList.FilterInput.Blur()
+			m.chat.FilesList.ResetFilter()
+			m.chat.FilesList.FilterInput.Blur()
 		}
 
 		switch m.FocusArea {
@@ -244,6 +244,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 	m.chat.FilePicker, cmd = m.chat.FilePicker.Update(msg)
 	cmds = append(cmds, cmd)
+	m.chat.FilesList, cmd = m.chat.FilesList.Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
@@ -267,6 +269,7 @@ func (m *model) handleRecipientSelection(r schemas.User) (tea.Cmd, error) {
 	cmd := m.chat.FetchMessages()
 	m.chat.Current = users[0]
 	m.chat.Recipient = users[1]
+	m.chat.SetFilesList()
 	return cmd, nil
 }
 

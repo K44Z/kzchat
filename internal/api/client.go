@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
@@ -209,7 +209,7 @@ func CreateChat(message schemas.Message) (*schemas.Chat, error) {
 }
 
 func GetUsers() ([]list.Item, error) {
-	client := http.Client{}
+	client := &http.Client{}
 	req, err := http.NewRequest("GET", BASE_URL+"/users/usernames/all", nil)
 	if err != nil {
 		return nil, err
@@ -266,7 +266,7 @@ func UploadFile(path string, chatID int32) error {
 	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	req.Header.Add("Authorization", "Bearer "+Config.Token)
-	client := http.Client{}
+	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
@@ -281,7 +281,7 @@ func UploadFile(path string, chatID int32) error {
 func DownloadFile(chatID int32, name string) (tea.Cmd, error) {
 	id := strconv.Itoa(int(chatID))
 	url := BASE_URL + "/messages/chat/" + id + "/downloadFile"
-	client := http.Client{}
+	client := &http.Client{}
 	b := struct {
 		Path string `json:"path"`
 	}{
@@ -291,10 +291,12 @@ func DownloadFile(chatID int32, name string) (tea.Cmd, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error marshing body %w", err)
 	}
-	req, err := http.NewRequest("GET", url, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, fmt.Errorf("Error creating request %w", err)
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+Config.Token)
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -302,5 +304,22 @@ func DownloadFile(chatID int32, name string) (tea.Cmd, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code %v", res.StatusCode)
 	}
-	return nil, nil
+	defer res.Body.Close()
+	err = os.MkdirAll("./downloads", os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	out, err := os.Create("./downloads/" + name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create file: %w", err)
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save file: %w", err)
+	}
+	return func() tea.Msg {
+		return fmt.Sprintf("file %s downloaded successfully", name)
+	}, nil
 }

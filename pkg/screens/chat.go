@@ -22,28 +22,28 @@ import (
 )
 
 type ChatModel struct {
-	Chat           schemas.Chat
-	Messages       []schemas.Message
-	Message        schemas.Message
-	Command        string
-	Current        schemas.User
-	Textarea       textarea.Model
-	Recipient      schemas.User
-	Err            string
-	Channels       []string
-	Width          int
-	ChatWidth      int
-	LeftWidth      int
-	RightWidth     int
-	Height         int
-	ContentHeight  int
-	Ws             *websocket.Conn
-	Viewport       viewport.Model
-	Content        string
-	Ready          bool
-	AttachmentList list.Model
-	FilePicker     filepicker.Model
-	SelectedFile   string
+	Chat          schemas.Chat
+	Messages      []schemas.Message
+	Message       schemas.Message
+	Command       string
+	Current       schemas.User
+	Textarea      textarea.Model
+	Recipient     schemas.User
+	Err           string
+	Channels      []string
+	Width         int
+	ChatWidth     int
+	LeftWidth     int
+	RightWidth    int
+	Height        int
+	ContentHeight int
+	Ws            *websocket.Conn
+	Viewport      viewport.Model
+	Content       string
+	Ready         bool
+	FilesList     list.Model
+	FilePicker    filepicker.Model
+	SelectedFile  string
 }
 
 func NewChatModel(width int, height int) *ChatModel {
@@ -94,23 +94,24 @@ func NewChatModel(width int, height int) *ChatModel {
 	} else {
 		errorString = err.Error()
 	}
+	l := list.New(nil, list.NewDefaultDelegate(), width-4, height-10)
 
 	m := &ChatModel{
-		Messages:       []schemas.Message{},
-		Current:        currentUser,
-		Channels:       []string{},
-		Width:          width,
-		Height:         height,
-		Textarea:       ta,
-		Err:            errorString,
-		Viewport:       vp,
-		ContentHeight:  contentHeight,
-		ChatWidth:      chatWidth,
-		RightWidth:     rightWidth,
-		LeftWidth:      leftWidth,
-		Ready:          true,
-		FilePicker:     fp,
-		AttachmentList: list.Model{},
+		Messages:      []schemas.Message{},
+		Current:       currentUser,
+		Channels:      []string{},
+		Width:         width,
+		Height:        height,
+		Textarea:      ta,
+		Err:           errorString,
+		Viewport:      vp,
+		ContentHeight: contentHeight,
+		ChatWidth:     chatWidth,
+		RightWidth:    rightWidth,
+		LeftWidth:     leftWidth,
+		Ready:         true,
+		FilePicker:    fp,
+		FilesList:     l,
 	}
 	str := m.RenderMessages()
 	m.Viewport.SetContent(str)
@@ -399,6 +400,7 @@ Controls:
   - Press [Ctrl+o]          → Browse users
   - Press [Ctrl+z]          → Quit the app
   - Press [Ctrl+q]          → Login screen
+  - Press [Ctrl+a]          → Browse chat files
 
 Available commands:
 	- :open <username>         → Open chat with a user
@@ -422,20 +424,20 @@ func (m *ChatModel) HandleFileUpload() {
 	}
 }
 
-func (m *ChatModel) SetList() {
+func (m *ChatModel) SetFilesList() {
 	width, height := m.Width-3, m.Height-15
 
 	delegate := list.NewDefaultDelegate()
 	delegate.ShowDescription = false
 	delegate.SetHeight(1)
-	AttachmentList := list.New(attachmentsToItems(m.Chat.Attachments), delegate, width, height)
-	AttachmentList.SetFilteringEnabled(true)
-	AttachmentList.SetShowFilter(true)
-	AttachmentList.SetShowPagination(true)
-	AttachmentList.SetShowTitle(true)
-	AttachmentList.Title = "Users"
+	FilesList := list.New(attachmentsToItems(m.Chat.Attachments), delegate, width, height)
+	FilesList.SetFilteringEnabled(true)
+	FilesList.SetShowFilter(true)
+	FilesList.SetShowPagination(true)
+	FilesList.SetShowTitle(true)
+	FilesList.Title = "Files"
 
-	m.AttachmentList = AttachmentList
+	m.FilesList = FilesList
 }
 
 func attachmentsToItems(a []schemas.Attachment) []list.Item {
