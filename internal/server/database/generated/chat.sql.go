@@ -59,7 +59,7 @@ HAVING COUNT(*) = 2
    AND COUNT(*) = (
        SELECT COUNT(*)
        FROM chat_members cm2
-       WHERE cm2.chat_id = cm.id
+       WHERE cm2.chat_id = c.id
    )
 `
 
@@ -76,31 +76,29 @@ func (q *Queries) FindChatByParticipants(ctx context.Context, dollar_1 []int32) 
 }
 
 const getAttachementsByChatId = `-- name: GetAttachementsByChatId :many
-SELECT a.id, message_id, file_name, file_type, file_size, file_url, uploaded_at, m.id, sender_id, content, chat_id, time, type 
+SELECT a.id, chat_id, file_name, file_type, file_size, file_url, uploaded_at, m.id, name, type, created_at 
 FROM attachments a
-JOIN messages m ON a.message_id = m.id
-WHERE m.chat_id = $1
+JOIN chats m ON a.chat_id = m.id
+WHERE m.id = $1
 ORDER BY a.uploaded_at ASC
 `
 
 type GetAttachementsByChatIdRow struct {
 	ID         int32
-	MessageID  int32
+	ChatID     int32
 	FileName   string
 	FileType   string
 	FileSize   int32
 	FileUrl    string
 	UploadedAt pgtype.Timestamp
 	ID_2       int32
-	SenderID   int32
-	Content    string
-	ChatID     int32
-	Time       pgtype.Timestamp
+	Name       string
 	Type       string
+	CreatedAt  pgtype.Timestamp
 }
 
-func (q *Queries) GetAttachementsByChatId(ctx context.Context, chatID int32) ([]GetAttachementsByChatIdRow, error) {
-	rows, err := q.db.Query(ctx, getAttachementsByChatId, chatID)
+func (q *Queries) GetAttachementsByChatId(ctx context.Context, id int32) ([]GetAttachementsByChatIdRow, error) {
+	rows, err := q.db.Query(ctx, getAttachementsByChatId, id)
 	if err != nil {
 		return nil, err
 	}
@@ -110,52 +108,16 @@ func (q *Queries) GetAttachementsByChatId(ctx context.Context, chatID int32) ([]
 		var i GetAttachementsByChatIdRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.MessageID,
+			&i.ChatID,
 			&i.FileName,
 			&i.FileType,
 			&i.FileSize,
 			&i.FileUrl,
 			&i.UploadedAt,
 			&i.ID_2,
-			&i.SenderID,
-			&i.Content,
-			&i.ChatID,
-			&i.Time,
+			&i.Name,
 			&i.Type,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAttachementsByMessageId = `-- name: GetAttachementsByMessageId :many
-SELECT id, message_id, file_name, file_type, file_size, file_url, uploaded_at 
-FROM attachments
-WHERE message_id = $1
-`
-
-func (q *Queries) GetAttachementsByMessageId(ctx context.Context, messageID int32) ([]Attachment, error) {
-	rows, err := q.db.Query(ctx, getAttachementsByMessageId, messageID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Attachment
-	for rows.Next() {
-		var i Attachment
-		if err := rows.Scan(
-			&i.ID,
-			&i.MessageID,
-			&i.FileName,
-			&i.FileType,
-			&i.FileSize,
-			&i.FileUrl,
-			&i.UploadedAt,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -296,6 +258,29 @@ func (q *Queries) GetDmChatMessagesByParticipants(ctx context.Context, arg GetDm
 		return nil, err
 	}
 	return items, nil
+}
+
+const saveAttachment = `-- name: SaveAttachment :execresult
+INSERT INTO attachments(chat_id, file_name, file_type, file_size, file_url) 
+VALUES($1, $2, $3, $4, $5)
+`
+
+type SaveAttachmentParams struct {
+	ChatID   int32
+	FileName string
+	FileType string
+	FileSize int32
+	FileUrl  string
+}
+
+func (q *Queries) SaveAttachment(ctx context.Context, arg SaveAttachmentParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, saveAttachment,
+		arg.ChatID,
+		arg.FileName,
+		arg.FileType,
+		arg.FileSize,
+		arg.FileUrl,
+	)
 }
 
 const storeChatMessage = `-- name: StoreChatMessage :execresult

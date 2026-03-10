@@ -20,8 +20,9 @@ const (
 	ViewPort FocusArea = iota
 	InputBox
 	CommandBox
-	List
+	UserList
 	FilePicker
+	AttachmentList
 )
 
 func (m *model) Init() tea.Cmd {
@@ -51,15 +52,16 @@ func NewModel() model {
 }
 
 type model struct {
-	width         int
-	height        int
-	quitting      bool
-	spinner       spinner.Model
-	currentScreen messages.Screen
-	signup        *s.SignupModel
-	login         *s.LoginModel
-	chat          *s.ChatModel
-	command       textinput.Model
-	FocusArea     FocusArea
-	List          list.Model
+	width          int
+	height         int
+	quitting       bool
+	spinner        spinner.Model
+	currentScreen  messages.Screen
+	signup         *s.SignupModel
+	login          *s.LoginModel
+	chat           *s.ChatModel
+	command        textinput.Model
+	FocusArea      FocusArea
+	List           list.Model
+	AttachmentList list.Model
 }

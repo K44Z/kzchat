@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/K44Z/kzchat/internal/server/http"
 
@@ -115,24 +116,66 @@ func CreateChatFromMessageHandler(s *services.Services) fiber.Handler {
 
 func UploadHandler(s *services.Services) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		fmt.Println("Handling Upload")
+		chatID := c.Params("id")
+		if chatID == "" {
+			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
+		}
 		f, err := c.FormFile("file")
 		if err != nil {
 			log.Println(err)
 			return http.Error(c, 500, fiber.ErrInternalServerError.Error())
 		}
-
 		uploadDir := "./uploads"
 		if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
 			return fmt.Errorf("failed to create upload directory: %w", err)
 		}
-		err = c.SaveFile(f, filepath.Join(uploadDir, f.Filename))
+		path := filepath.Join(uploadDir, f.Filename)
+		err = c.SaveFile(f, path)
 		if err != nil {
 			log.Println(err)
+			return http.Error(c, 500, fiber.ErrInternalServerError.Error())
+		}
+		id, err := strconv.Atoi(chatID)
+		if err != nil {
+			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
+		}
+		err = s.ChatService.SaveAttachment(c.Context(), schemas.SaveAttachementParams{
+			File:   f,
+			ChatID: int32(id),
+			Path:   path,
+		})
+		if err != nil {
 			return http.Error(c, 500, fiber.ErrInternalServerError.Error())
 		}
 		return http.Success(c, map[string]any{
 			"filename": f.Filename,
 		})
+	}
+}
+
+func GetAttachmentsByChatHandler(s *services.Services) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		chatID := c.Params("id")
+		if chatID == "" {
+			return http.Error(c, fiber.ErrBadRequest.Code, fiber.ErrBadRequest.Error())
+		}
+		id, err := strconv.Atoi(chatID)
+		if err != nil {
+			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
+		}
+		attachments, err := s.ChatService.GetAttachmentsByChatService(c.Context(), int32(id))
+		if err != nil {
+			return http.Error(c, fiber.ErrInternalServerError.Code, fiber.ErrInternalServerError.Error())
+		}
+		return http.Success(c, map[string]any{
+			"attachments": attachments,
+		})
+	}
+}
+
+func DownloadFileHandler(s *services.Services) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		req := c.Locals("validatedBody").(schemas.DownloadFile)
+		return c.Status(200).Download(req.Path)
 	}
 }

@@ -110,6 +110,7 @@ func (m *ChatModel) SendMessage(recipient schemas.User) {
 		if m.Recipient == recipient {
 			m.Messages = append(m.Messages, message)
 		}
+		go api.UploadFile(m.SelectedFile, m.Chat.ID)
 		m.Viewport.SetContent(m.RenderMessages())
 		m.Viewport.GotoBottom()
 		m.Textarea.Reset()

@@ -23,8 +23,9 @@ type ChatRepository interface {
 	GetMessagesByChatId(ctx context.Context, id int32) ([]schemas.Message, error)
 	GetMessagesByParticipants(ctx context.Context, arg sqlc.GetDmChatMessagesByParticipantsParams) ([]schemas.Message, error)
 	StoreMessage(ctx context.Context, arg sqlc.StoreChatMessageParams) error
-	GetAttachementByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error)
+	// GetAttachementByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error)
 	GetAttachementsByChat(ctx context.Context, id int32) ([]schemas.Attachment, error)
+	SaveAttachmentRepo(ctx context.Context, param schemas.SaveAttachementParams) error
 }
 
 type chatRepository struct {
@@ -165,23 +166,23 @@ func (c *chatRepository) StoreMessage(ctx context.Context, arg sqlc.StoreChatMes
 	return nil
 }
 
-func (c *chatRepository) GetAttachementByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error) {
-	var result []schemas.Attachment
-	res, err := c.queries.GetAttachementsByMessageId(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	for _, a := range res {
-		result = append(result, schemas.Attachment{
-			ID:       a.ID,
-			FileName: a.FileName,
-			FileType: a.FileType,
-			FileSize: a.FileSize,
-			URL:      a.FileUrl,
-		})
-	}
-	return result, nil
-}
+// func (c *chatRepository) GetAttachementByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error) {
+// 	var result []schemas.Attachment
+// 	res, err := c.queries.GetAttachementsByMessageId(ctx, id)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	for _, a := range res {
+// 		result = append(result, schemas.Attachment{
+// 			ID:       a.ID,
+// 			FileName: a.FileName,
+// 			FileType: a.FileType,
+// 			FileSize: a.FileSize,
+// 			URL:      a.FileUrl,
+// 		})
+// 	}
+// 	return result, nil
+// }
 
 func (c *chatRepository) GetAttachementsByChat(ctx context.Context, id int32) ([]schemas.Attachment, error) {
 	var result []schemas.Attachment
@@ -199,4 +200,18 @@ func (c *chatRepository) GetAttachementsByChat(ctx context.Context, id int32) ([
 		})
 	}
 	return result, nil
+}
+
+func (c *chatRepository) SaveAttachmentRepo(ctx context.Context, param schemas.SaveAttachementParams) error {
+	_, err := c.queries.SaveAttachment(ctx, sqlc.SaveAttachmentParams{
+		FileName: param.File.Filename,
+		FileType: param.File.Header["Content-Type"][0],
+		FileSize: int32(param.File.Size),
+		ChatID:   param.ChatID,
+		FileUrl:  param.Path,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

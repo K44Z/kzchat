@@ -10,7 +10,7 @@ import (
 
 type Attachment struct {
 	ID         int32
-	MessageID  int32
+	ChatID     int32
 	FileName   string
 	FileType   string
 	FileSize   int32

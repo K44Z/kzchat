@@ -38,13 +38,13 @@ CREATE TABLE chat_members (
 
 CREATE TABLE attachments (
     id SERIAL PRIMARY KEY,
-    message_id INTEGER NOT NULL,
+    chat_id INTEGER NOT NULL,
     file_name TEXT NOT NULL,
     file_type TEXT NOT NULL,
     file_size INTEGER NOT NULL,
     file_url TEXT NOT NULL,
     uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
 );
 
 -- +goose StatementEnd

@@ -7,6 +7,7 @@ import (
 
 	"github.com/K44Z/kzchat/internal/helpers"
 	"github.com/K44Z/kzchat/internal/messages"
+	"github.com/charmbracelet/bubbles/list"
 
 	"github.com/K44Z/kzchat/internal/server/schemas"
 
@@ -21,28 +22,28 @@ import (
 )
 
 type ChatModel struct {
-	Chat          schemas.Chat
-	Messages      []schemas.Message
-	Message       schemas.Message
-	Command       string
-	Current       schemas.User
-	Textarea      textarea.Model
-	Recipient     schemas.User
-	Err           string
-	Channels      []string
-	Width         int
-	ChatWidth     int
-	LeftWidth     int
-	RightWidth    int
-	Height        int
-	ContentHeight int
-	Ws            *websocket.Conn
-	Viewport      viewport.Model
-	Content       string
-	Ready         bool
-	ListView      bool
-	FilePicker    filepicker.Model
-	SelectedFile  string
+	Chat           schemas.Chat
+	Messages       []schemas.Message
+	Message        schemas.Message
+	Command        string
+	Current        schemas.User
+	Textarea       textarea.Model
+	Recipient      schemas.User
+	Err            string
+	Channels       []string
+	Width          int
+	ChatWidth      int
+	LeftWidth      int
+	RightWidth     int
+	Height         int
+	ContentHeight  int
+	Ws             *websocket.Conn
+	Viewport       viewport.Model
+	Content        string
+	Ready          bool
+	AttachmentList list.Model
+	FilePicker     filepicker.Model
+	SelectedFile   string
 }
 
 func NewChatModel(width int, height int) *ChatModel {
@@ -94,22 +95,22 @@ func NewChatModel(width int, height int) *ChatModel {
 		errorString = err.Error()
 	}
 
-	filepicker.New()
 	m := &ChatModel{
-		Messages:      []schemas.Message{},
-		Current:       currentUser,
-		Channels:      []string{},
-		Width:         width,
-		Height:        height,
-		Textarea:      ta,
-		Err:           errorString,
-		Viewport:      vp,
-		ContentHeight: contentHeight,
-		ChatWidth:     chatWidth,
-		RightWidth:    rightWidth,
-		LeftWidth:     leftWidth,
-		Ready:         true,
-		FilePicker:    fp,
+		Messages:       []schemas.Message{},
+		Current:        currentUser,
+		Channels:       []string{},
+		Width:          width,
+		Height:         height,
+		Textarea:       ta,
+		Err:            errorString,
+		Viewport:       vp,
+		ContentHeight:  contentHeight,
+		ChatWidth:      chatWidth,
+		RightWidth:     rightWidth,
+		LeftWidth:      leftWidth,
+		Ready:          true,
+		FilePicker:     fp,
+		AttachmentList: list.Model{},
 	}
 	str := m.RenderMessages()
 	m.Viewport.SetContent(str)
@@ -415,8 +416,32 @@ Available commands:
 }
 
 func (m *ChatModel) HandleFileUpload() {
-	err := api.UploadFile(m.SelectedFile)
+	err := api.UploadFile(m.SelectedFile, m.Chat.ID)
 	if err != nil {
 		m.Err = err.Error()
 	}
+}
+
+func (m *ChatModel) SetList() {
+	width, height := m.Width-3, m.Height-15
+
+	delegate := list.NewDefaultDelegate()
+	delegate.ShowDescription = false
+	delegate.SetHeight(1)
+	AttachmentList := list.New(attachmentsToItems(m.Chat.Attachments), delegate, width, height)
+	AttachmentList.SetFilteringEnabled(true)
+	AttachmentList.SetShowFilter(true)
+	AttachmentList.SetShowPagination(true)
+	AttachmentList.SetShowTitle(true)
+	AttachmentList.Title = "Users"
+
+	m.AttachmentList = AttachmentList
+}
+
+func attachmentsToItems(a []schemas.Attachment) []list.Item {
+	items := make([]list.Item, len(a))
+	for i := range a {
+		items[i] = a[i]
+	}
+	return items
 }

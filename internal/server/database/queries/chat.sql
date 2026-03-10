@@ -59,7 +59,7 @@ HAVING COUNT(*) = 2
    AND COUNT(*) = (
        SELECT COUNT(*)
        FROM chat_members cm2
-       WHERE cm2.chat_id = cm.id
+       WHERE cm2.chat_id = c.id
    );
 
 -- name: GetChatById :one
@@ -67,16 +67,14 @@ SELECT * FROM chats
 WHERE id = $1;
 
 
--- name: GetAttachementsByMessageId :many
-SELECT * 
-FROM attachments
-WHERE message_id = $1;
-
-
 -- name: GetAttachementsByChatId :many 
 SELECT * 
 FROM attachments a
-JOIN messages m ON a.message_id = m.id
-WHERE m.chat_id = $1
+JOIN chats m ON a.chat_id = m.id
+WHERE m.id = $1
 ORDER BY a.uploaded_at ASC;
 
+
+-- name: SaveAttachment :execresult
+INSERT INTO attachments(chat_id, file_name, file_type, file_size, file_url) 
+VALUES($1, $2, $3, $4, $5); 

@@ -19,3 +19,7 @@ type WsConnectedMsg struct {
 type ChatFetchedMsg struct {
 	Messages []schemas.Message
 }
+
+type AttachementReadyMsg struct {
+	ready bool
+}

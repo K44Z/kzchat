@@ -19,6 +19,7 @@ type ChatService interface {
 	GetChatIdByParticipants(ctx context.Context, arg []int32) (id *int32, name string, err error)
 	CreateChat(ctx context.Context, users []schemas.User, chatType string) (*schemas.Chat, error)
 	GetAttachmentsByChatService(ctx context.Context, id int32) ([]schemas.Attachment, error)
+	SaveAttachment(ctx context.Context, param schemas.SaveAttachementParams) error
 }
 
 type chatService struct {
@@ -129,18 +130,25 @@ func (s *chatService) CreateChat(ctx context.Context, users []schemas.User, chat
 	return chat, nil
 }
 
-func (s *chatService) GetAttachmentByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error) {
-	res, err := s.chatRepo.GetAttachementByMessage(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
+//	func (s *chatService) GetAttachmentByMessage(ctx context.Context, id int32) ([]schemas.Attachment, error) {
+//		res, err := s.chatRepo.GetAttachementByMessage(ctx, id)
+//		if err != nil {
+//			return nil, err
+//		}
+//		return res, nil
+//	}
 func (s *chatService) GetAttachmentsByChatService(ctx context.Context, id int32) ([]schemas.Attachment, error) {
 	res, err := s.chatRepo.GetAttachementsByChat(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
+}
+
+func (s *chatService) SaveAttachment(ctx context.Context, param schemas.SaveAttachementParams) error {
+	err := s.chatRepo.SaveAttachmentRepo(ctx, param)
+	if err != nil {
+		return err
+	}
+	return nil
 }

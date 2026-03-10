@@ -140,6 +140,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tea.Batch(cmd, clearErrorAfter(2*time.Second))
 				}
 				return m, cmd
+			case 6:
+				var cmd tea.Cmd
+				selectedItem := m.chat.AttachmentList.SelectedItem().(schemas.Attachment)
+				cmd, err := m.handleFileDownload(selectedItem)
+				if err != nil {
+					return m, nil
+				}
+				m.FocusArea = 1
+				return m, cmd
 			}
 		case "ctrl+o":
 			m.FocusArea = 4
@@ -158,6 +167,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.FocusArea = 5
 			m.chat.FilePicker, cmd = m.chat.FilePicker.Update(msg)
 			return m, cmd
+		case "ctrl+a":
+			m.FocusArea = 6
+			m.chat.AttachmentList.ResetFilter()
+			m.chat.AttachmentList.FilterInput.Blur()
 		}
 
 		switch m.FocusArea {
@@ -278,4 +291,12 @@ func (m *model) SetList() {
 
 func (m *model) UpdateListHeight() {
 	m.List.SetHeight(m.height)
+}
+
+func (m *model) handleFileDownload() (tea.Cmd, error) {
+	cmd, err := api.DownloadFile(m.chat.Chat.ID, m.chat.SelectedFile)
+	if err != nil {
+		return nil, err
+	}
+	return cmd, nil
 }

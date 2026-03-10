@@ -1,6 +1,8 @@
 package schemas
 
 import (
+	"mime/multipart"
+	"strconv"
 	"time"
 )
 
@@ -24,6 +26,15 @@ type Attachment struct {
 	FileType string `json:"file_type"`
 	FileSize int32  `json:"file_size"`
 	URL      string `json:"url"`
+}
+
+type SaveAttachementParams struct {
+	File   *multipart.FileHeader
+	ChatID int32
+	Path   string
+}
+type DownloadFile struct {
+	Path string `json:"path"`
 }
 
 func (a Auth) Read(p []byte) (n int, err error) {
@@ -81,6 +92,19 @@ func (u User) Title() string {
 
 func (u User) Description() string {
 	return ""
+}
+
+func (u Attachment) FilterValue() string {
+	return u.FileName
+}
+
+func (u Attachment) Title() string {
+	return u.FileName
+}
+
+func (u Attachment) Description() string {
+	size := strconv.Itoa(int(u.FileSize))
+	return u.FileType + " " + size
 }
 
 type ChatMember struct {

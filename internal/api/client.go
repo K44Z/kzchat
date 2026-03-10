@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/bubbles/list"
 
 	"github.com/K44Z/kzchat/internal/server/schemas"
@@ -240,7 +242,7 @@ func GetUsers() ([]list.Item, error) {
 	return list, nil
 }
 
-func UploadFile(path string) error {
+func UploadFile(path string, chatID int32) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -256,7 +258,9 @@ func UploadFile(path string) error {
 		return fmt.Errorf("failed to copy file: %w", err)
 	}
 	w.Close()
-	req, err := http.NewRequest("POST", BASE_URL+"/messages/upload", &b)
+	id := strconv.Itoa(int(chatID))
+	url := fmt.Sprintf("/messages/upload/chat/%v", id)
+	req, err := http.NewRequest("POST", BASE_URL+url, &b)
 	if err != nil {
 		return fmt.Errorf("failed to create request %w", err)
 	}
@@ -272,4 +276,31 @@ func UploadFile(path string) error {
 		return fmt.Errorf("unexpected status code: %d", res.StatusCode)
 	}
 	return nil
+}
+
+func DownloadFile(chatID int32, name string) (tea.Cmd, error) {
+	id := strconv.Itoa(int(chatID))
+	url := BASE_URL + "/messages/chat/" + id + "/downloadFile"
+	client := http.Client{}
+	b := struct {
+		Path string `json:"path"`
+	}{
+		Path: "./uploads/" + name,
+	}
+	body, err := json.Marshal(&b)
+	if err != nil {
+		return nil, fmt.Errorf("Error marshing body %w", err)
+	}
+	req, err := http.NewRequest("GET", url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, fmt.Errorf("Error creating request %w", err)
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code %v", res.StatusCode)
+	}
+	return nil, nil
 }
