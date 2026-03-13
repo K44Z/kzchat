@@ -3,6 +3,7 @@ package screens
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/K44Z/kzchat/internal/helpers"
@@ -350,28 +351,50 @@ func (m *ChatModel) RenderMessages() string {
 
 		recipientStyle := lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("6")) 
+			Foreground(lipgloss.Color("15")) 
 
 		messageStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("15"))
+
+		attachmentStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("4")).
+			Italic(true)
 
 		for _, msg := range m.Messages {
 			timestamp := timestampStyle.Render(fmt.Sprintf("[%s]", msg.Time.Format("15:04")))
 			
 			var username string
 			if msg.Sender.Username == m.Current.Username {
-				username = usernameStyle.Render(msg.Sender.Username)
+				username = usernameStyle.Render("You")
 			} else {
 				username = recipientStyle.Render(msg.Sender.Username)
 			}
 
-			wrapped := helpers.WrapText(msg.Content, m.Viewport.Width)
+			hasAttachment := false
+			words := strings.Fields(msg.Content)
+			for i, w := range words {
+				if filepath.IsAbs(w) {
+					words[i] = "@ " + filepath.Base(w)
+					hasAttachment = true
+				}
+			}
+			displayContent := strings.Join(words, " ")
+			if displayContent == "" {
+				displayContent = msg.Content 
+			}
+
+			currentStyle := messageStyle
+			if hasAttachment {
+				currentStyle = attachmentStyle
+			}
+
+			wrapped := helpers.WrapText(displayContent, m.Viewport.Width)
 			var renderedLines []string
 			for i, line := range wrapped {
 				if i == 0 {
-					renderedLines = append(renderedLines, messageStyle.Render(line))
+					renderedLines = append(renderedLines, currentStyle.Render(line))
 				} else {
-					renderedLines = append(renderedLines, "  "+messageStyle.Render(line))
+					renderedLines = append(renderedLines, "  "+currentStyle.Render(line))
 				}
 			}
 			message := strings.Join(renderedLines, "\n")
