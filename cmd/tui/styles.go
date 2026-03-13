@@ -29,35 +29,35 @@ func StatusStyle(mode string) lipgloss.Style {
 	var background string
 	switch mode {
 	case "Insert":
-		background = "#85c1dc"
+		background = "4" 
 	case "Command":
-		background = "#babbf1"
+		background = "3" 
 	case "Normal":
-		background = "#585b70"
+		background = "8"
 	case "Search":
-		background = "#c6a0f6"
+		background = "5" 
 	default:
-		background = "#b7bdf8"
+		background = "8"
 	}
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("#eff1f5")).
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color("15")).
 		Background(lipgloss.Color(background)).
 		Padding(0, 1).
-		Bold(true).BorderRight(true).
-		BorderForeground(lipgloss.Color("#89b4fa"))
+		Bold(true)
 }
 
 var statusRight = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#eff1f5")).
-	Background(lipgloss.Color("#8839ef")).
+	Foreground(lipgloss.Color("0")).
+	Background(lipgloss.Color("7")).
 	Padding(0, 1)
 
 var statusBar = lipgloss.NewStyle().
-	Background(lipgloss.Color("#414559")).
+	Background(lipgloss.Color("0")).
 	Height(1).
 	Width(0)
 
 var statusMid = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("240")).
-	Background(lipgloss.Color("#333333")).Align(lipgloss.Center)
+	Foreground(lipgloss.Color("8")).
+	Background(lipgloss.Color("0")).Align(lipgloss.Center)
 
 var commandStyle = lipgloss.NewStyle()

@@ -30,3 +30,5 @@ yarn-error.log*
 .cache/
 server/tmp
 tmp/
+/cmd/server/uploads
+/cmd/tui/downloads

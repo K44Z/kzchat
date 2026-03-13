@@ -229,9 +229,8 @@ func (m *ChatModel) View() string {
 	contentBoxHeight = max(contentBoxHeight, 5)
 
 	leftStyle := lipgloss.NewStyle().
-		Border(lipgloss.ThickBorder(), true, true).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#414559")).
+		Border(lipgloss.NormalBorder(), false, true, false, false).
+		BorderForeground(lipgloss.Color("8")).
 		Width(m.LeftWidth).
 		Height(contentBoxHeight).
 		Padding(1, 1).
@@ -241,9 +240,6 @@ func (m *ChatModel) View() string {
 	chatBoxWidth = max(chatBoxWidth, 20)
 
 	chatStyle := lipgloss.NewStyle().
-		Border(lipgloss.ThickBorder(), true, true).
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#414559")).
 		Width(chatBoxWidth).
 		Height(contentBoxHeight).
 		Padding(1, 1).
@@ -280,8 +276,10 @@ func (m *ChatModel) View() string {
 
 	textareaStyle := lipgloss.NewStyle().
 		Width(textareaWidth).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#414559"))
+		Padding(0, 1).
+		BorderTop(true).
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("8"))
 
 	inputSection := textareaStyle.Render(m.Textarea.View())
 
@@ -307,23 +305,23 @@ func (m *ChatModel) renderLeftSidebar() string {
 
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("#8839ef"))
+		Foreground(lipgloss.Color("7"))
 
 	content.WriteString(headerStyle.Render("Channels"))
 	content.WriteString("\n\n")
 
 	if len(m.Channels) == 0 {
-		content.WriteString("No channels")
+		content.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("8")).Render("No channels"))
 	} else {
 		for i, ch := range m.Channels {
-			channelStyle := lipgloss.NewStyle()
+			channelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 			prefix := " "
 
 			if i == 0 {
 				channelStyle = channelStyle.
 					Bold(true).
 					Foreground(lipgloss.Color("15"))
-				prefix = ">"
+				prefix = "┃"
 			}
 
 			channel := channelStyle.Render(fmt.Sprintf("%s #%s", prefix, ch))
@@ -344,18 +342,29 @@ func (m *ChatModel) RenderMessages() string {
 		content.WriteString(m.renderGuide(messageAreaWidth))
 	} else {
 		timestampStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("240"))
+			Foreground(lipgloss.Color("8"))
 
 		usernameStyle := lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("14"))
+			Foreground(lipgloss.Color("7"))
+
+		recipientStyle := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("6")) 
 
 		messageStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("15"))
 
 		for _, msg := range m.Messages {
 			timestamp := timestampStyle.Render(fmt.Sprintf("[%s]", msg.Time.Format("15:04")))
-			username := usernameStyle.Render(msg.Sender.Username)
+			
+			var username string
+			if msg.Sender.Username == m.Current.Username {
+				username = usernameStyle.Render(msg.Sender.Username)
+			} else {
+				username = recipientStyle.Render(msg.Sender.Username)
+			}
+
 			wrapped := helpers.WrapText(msg.Content, m.Viewport.Width)
 			var renderedLines []string
 			for i, line := range wrapped {
@@ -409,8 +418,7 @@ Available commands:
 
 	renderWidth := min(width, 100)
 	content := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#ffffff")).
+		Foreground(lipgloss.Color("8")).
 		Width(renderWidth).
 		Render(guideText)
 

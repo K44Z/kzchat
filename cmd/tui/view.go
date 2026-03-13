@@ -9,8 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var appStyle = lipgloss.NewStyle().Padding(1, 2)
-
 func (m model) View() string {
 	var content string
 	var mode string
@@ -60,28 +58,19 @@ func (m model) View() string {
 	gapString := statusMid.Render(strings.Repeat(" ", gap))
 	bar := statusBar.Width(m.width).MarginBottom(0).Render(left + mid + gapString + right)
 	command := commandStyle.Render(m.command.View())
+	listStyle := layoutStyle.
+		Width(m.width).
+		Height(m.height - 2)
+
 	var box string
 	if m.FocusArea == 4 {
-		box = layoutStyle.
-			Width(m.width).
-			Height(m.height - 2).
-			Render(m.List.View())
-	} else {
-		box = layoutStyle.
-			Width(m.width).
-			Height(m.height - 2).
-			Render(content)
-	}
-	if m.FocusArea == 5 {
-		box = layoutStyle.
-			Width(m.width).
-			Height(m.height - 2).
-			Render(m.chat.FilePicker.View())
+		box = listStyle.Render(m.List.View())
+	} else if m.FocusArea == 5 {
+		box = listStyle.Render(m.chat.FilePicker.View())
 	} else if m.FocusArea == 6 {
-		box = layoutStyle.
-			Width(m.width).
-			Height(m.height - 2).
-			Render(m.chat.FilesList.View())
+		box = listStyle.Render(m.chat.FilesList.View())
+	} else {
+		box = listStyle.Render(content)
 	}
 
 	return box + "\n" + bar + "\n" + command
